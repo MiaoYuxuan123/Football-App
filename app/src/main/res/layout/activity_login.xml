@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:gravity="center"
+    android:background="#FFFFFF">
+
+    <!-- 登录标题 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="足球训练系统"
+        android:textSize="30sp"
+        android:textColor="#008000"
+        android:layout_marginBottom="50dp"/>
+
+    <!-- 账号输入框 -->
+    <EditText
+        android:id="@+id/et_account"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="请输入手机号/账号"
+        android:layout_marginBottom="15dp"
+        android:padding="12dp"
+        android:background="#F5F5F5"
+        android:outlineProvider="none"/>
+
+    <!-- 密码输入框 -->
+    <EditText
+        android:id="@+id/et_password"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="请输入密码"
+        android:inputType="textPassword"
+        android:layout_marginBottom="30dp"
+        android:padding="12dp"
+        android:background="#F5F5F5"
+        android:outlineProvider="none"/>
+
+    <!-- 登录按钮 -->
+    <Button
+        android:id="@+id/btn_login"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="登录"
+        android:background="#008000"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:padding="10dp"/>
+
+    <!-- 注册入口 -->
+    <TextView
+        android:id="@+id/tv_go_register"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="没有账号？去注册"
+        android:textColor="#008000"
+        android:layout_marginTop="20dp"/>
+
+</LinearLayout>

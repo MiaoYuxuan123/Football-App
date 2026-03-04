@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="#FFFFFF">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="欢迎回来，球员！"
+        android:textSize="25sp"
+        android:textColor="#000000"/>
+
+    <!-- 快速开始训练按钮 -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_start_train"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="开始训练识别"
+        android:background="#008000"
+        android:textColor="#FFFFFF"
+        android:layout_marginTop="40dp"
+        android:textSize="20sp"/>
+
+    <!-- 本周训练统计 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="40dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="射门：30次"
+            android:textSize="18sp"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="成功率：78%"
+            android:textSize="18sp"/>
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 首页 -->
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@drawable/ic_baseline_home_24"
+        android:title="首页"/>
+    <!-- 训练 -->
+    <item
+        android:id="@+id/nav_train"
+        android:icon="@drawable/ic_baseline_sports_soccer_24"
+        android:title="训练"/>
+    <!-- 里程碑 -->
+    <item
+        android:id="@+id/nav_milestone"
+        android:icon="@drawable/ic_baseline_grade_24"
+        android:title="里程碑"/>
+    <!-- 我的 -->
+    <item
+        android:id="@+id/nav_mine"
+        android:icon="@drawable/ic_baseline_person_24"
+        android:title="我的"/>
+</menu>
