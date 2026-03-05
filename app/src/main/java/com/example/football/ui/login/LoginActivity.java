@@ -8,15 +8,24 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.example.football.R;
+import com.example.football.entity.user;
 import com.example.football.ui.main.MainActivity;
 import com.example.football.ui.login.RegisterActivity;
 import com.example.football.utils.SPUtils;
+import com.google.gson.Gson;
+
+import java.io.IOException;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 public class LoginActivity extends AppCompatActivity {
 
     // 声明控件
     private EditText etAccount;   // 账号输入框
     private EditText etPassword;  // 密码输入框
+    private static final String GET_USER_URL = "http://10.0.2.2:8088/findoneuser";
+    private final OkHttpClient okHttpClient = new OkHttpClient();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,21 +72,56 @@ public class LoginActivity extends AppCompatActivity {
                     return;
                 }
 
-                // 3. 模拟登录成功（实际项目可对接后端，这里先本地验证）
-                // 临时规则：账号任意，密码只要是6位及以上就登录成功
-                if (password.length() >= 6) {
-                    // 保存登录状态（用SP工具类）
-                    SPUtils.putBoolean(LoginActivity.this, "isLogin", true);
-                    SPUtils.putString(LoginActivity.this, "account", account);
+                // 3. 调用后端接口验证登录信息
+                String url = GET_USER_URL + "?name=" + account;
+                Request request = new Request.Builder()
+                        .url(url)
+                        .build();
 
-                    // 跳转到主页面
-                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                    startActivity(intent);
-                    // 关闭登录页，避免返回
-                    finish();
-                } else {
-                    Toast.makeText(LoginActivity.this, "密码至少6位", Toast.LENGTH_SHORT).show();
-                }
+                okHttpClient.newCall(request).enqueue(new okhttp3.Callback() {
+                    @Override
+                    public void onFailure(okhttp3.Call call, IOException e) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(LoginActivity.this, "网络请求失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onResponse(okhttp3.Call call, okhttp3.Response response) throws IOException {
+                        final String responseBody = response.body().string();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (response.isSuccessful()) {
+                                    // 解析返回的用户信息
+                                    Gson gson = new Gson();
+                                    user user = gson.fromJson(responseBody, user.class);
+                                    
+                                    if (user != null && password.equals(user.getPassword())) {
+                                        // 密码正确，登录成功
+                                        SPUtils.putBoolean(LoginActivity.this, "isLogin", true);
+                                        SPUtils.putString(LoginActivity.this, "account", account);
+
+                                        // 跳转到主页面
+                                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                                        startActivity(intent);
+                                        // 关闭登录页，避免返回
+                                        finish();
+                                    } else {
+                                        // 密码错误或用户不存在
+                                        Toast.makeText(LoginActivity.this, "账号或密码错误", Toast.LENGTH_SHORT).show();
+                                    }
+                                } else {
+                                    // 网络请求成功但返回失败
+                                    Toast.makeText(LoginActivity.this, "登录失败：" + responseBody, Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        });
+                    }
+                });
             }
         });
     }
