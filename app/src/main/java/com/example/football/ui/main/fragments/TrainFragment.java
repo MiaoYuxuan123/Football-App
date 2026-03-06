@@ -28,13 +28,20 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.football.R;
+import com.example.football.database.MilestoneDbHelper;
+import com.example.football.database.entity.MilestoneData;
 import com.example.football.utils.SPUtils;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.File;
+import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -67,7 +74,7 @@ public class TrainFragment extends Fragment {
 
     // 识别状态控制
     private boolean isRecognizing = false;
-    private String currentMode = "射门"; // 默认选中射门模式
+    private String currentMode = "";
     private int actionCount = 0; // 动作计数
     private int totalScore = 0; // 总评分
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -75,10 +82,6 @@ public class TrainFragment extends Fragment {
 
     private static final String TAG = "TrainFragment";
     private static final String SP_KEY_TRAIN_RECORDS = "train_records";
-    private static final String SAVE_TEXT_DEFAULT = "保存训练结果";
-    private static final String SAVE_TEXT_WAIT = "视频保存中...";
-    private static final String START_TEXT_DEFAULT = "开始识别";
-    private static final String START_TEXT_RETRY = "重新录制";
 
     private String pendingVideoPath = "";
     private boolean videoFinalizeDone = false;
@@ -88,7 +91,7 @@ public class TrainFragment extends Fragment {
                 if (isGranted) {
                     initCameraPreview();
                 } else if (isAdded()) {
-                    Toast.makeText(requireContext(), "请先允许相机权限", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), getString(R.string.train_toast_need_camera_permission), Toast.LENGTH_SHORT).show();
                 }
             });
 
@@ -143,7 +146,7 @@ public class TrainFragment extends Fragment {
 
         // 初始化相机线程池
         cameraExecutor = Executors.newSingleThreadExecutor();
-        updateRecordStatus("视频状态：待开始录制", false, SAVE_TEXT_DEFAULT);
+        updateRecordStatus(getString(R.string.train_status_idle), false, getString(R.string.train_save_text_default));
         updateStartButtonStyle(false);
     }
 
@@ -154,7 +157,7 @@ public class TrainFragment extends Fragment {
     }
 
     private void updateStartButtonStyle(boolean isRetry) {
-        btnStartRecognize.setText(isRetry ? START_TEXT_RETRY : START_TEXT_DEFAULT);
+        btnStartRecognize.setText(isRetry ? getString(R.string.train_start_text_retry) : getString(R.string.train_start_text_default));
         btnStartRecognize.setBackgroundColor(isRetry ? Color.parseColor("#FF9800") : Color.parseColor("#008000"));
     }
 
@@ -184,7 +187,7 @@ public class TrainFragment extends Fragment {
             } catch (Exception e) {
                 // 相机初始化失败提示
                 if (isAdded()) {
-                    Toast.makeText(requireContext(), "相机初始化失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), getString(R.string.train_toast_camera_init_failed, e.getMessage()), Toast.LENGTH_SHORT).show();
                 }
             }
         }, ContextCompat.getMainExecutor(requireContext()));
@@ -192,19 +195,19 @@ public class TrainFragment extends Fragment {
 
     private void startVideoRecording() {
         if (videoCapture == null || !isAdded()) {
-            Toast.makeText(requireContext(), "录像未就绪，请稍后重试", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.train_toast_recorder_not_ready), Toast.LENGTH_SHORT).show();
             return;
         }
 
         File baseDir = requireContext().getExternalFilesDir(android.os.Environment.DIRECTORY_MOVIES);
         if (baseDir == null) {
-            Toast.makeText(requireContext(), "无法访问视频存储目录", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.train_toast_dir_unavailable), Toast.LENGTH_SHORT).show();
             return;
         }
 
         File videoDir = new File(baseDir, "train_videos");
         if (!videoDir.exists() && !videoDir.mkdirs()) {
-            Toast.makeText(requireContext(), "无法创建视频目录", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.train_toast_dir_create_failed), Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -214,7 +217,7 @@ public class TrainFragment extends Fragment {
         lastVideoPath = "";
         videoFinalizeDone = false;
         btnSaveResult.setEnabled(false);
-        updateRecordStatus("视频状态：录制中", false, SAVE_TEXT_WAIT);
+        updateRecordStatus(getString(R.string.train_status_recording), false, getString(R.string.train_save_text_wait));
         updateStartButtonStyle(false);
 
         FileOutputOptions outputOptions = new FileOutputOptions.Builder(videoFile).build();
@@ -230,18 +233,18 @@ public class TrainFragment extends Fragment {
                         if (!finalizeEvent.hasError()) {
                             lastVideoPath = pendingVideoPath;
                             videoFinalizeDone = true;
-                            updateRecordStatus("视频状态：已保存，可回放", true, SAVE_TEXT_DEFAULT);
+                            updateRecordStatus(getString(R.string.train_status_ready), true, getString(R.string.train_save_text_default));
                             updateStartButtonStyle(false);
-                            Toast.makeText(requireContext(), "视频已保存，可点击保存训练结果", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(requireContext(), getString(R.string.train_toast_video_saved), Toast.LENGTH_SHORT).show();
                             Log.d(TAG, "Video saved: " + lastVideoPath + ", size=" + videoFile.length());
                         } else {
                             Log.e(TAG, "Video finalize error: " + finalizeEvent.getError());
                             lastVideoPath = "";
                             videoFinalizeDone = false;
-                            updateRecordStatus("视频状态：保存失败，请重录", false, SAVE_TEXT_DEFAULT);
+                            updateRecordStatus(getString(R.string.train_status_save_failed), false, getString(R.string.train_save_text_default));
                             btnStartRecognize.setVisibility(View.VISIBLE);
                             updateStartButtonStyle(true);
-                            Toast.makeText(requireContext(), "视频保存失败，请点击重新录制", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(requireContext(), getString(R.string.train_toast_video_save_failed), Toast.LENGTH_SHORT).show();
                         }
                     }
                 });
@@ -264,6 +267,99 @@ public class TrainFragment extends Fragment {
         String oldRecords = SPUtils.getString(requireContext(), SP_KEY_TRAIN_RECORDS, "");
         String newRecords = record + (oldRecords.isEmpty() ? "" : "\n" + oldRecords);
         SPUtils.putString(requireContext(), SP_KEY_TRAIN_RECORDS, newRecords);
+
+        // Keep milestone page in sync when a training result is persisted.
+        updateMilestoneProgress(avgScore);
+    }
+
+    private void updateMilestoneProgress(int avgScore) {
+        String account = SPUtils.getString(requireContext(), "account", "default");
+        MilestoneDbHelper db = MilestoneDbHelper.getInstance(requireContext());
+        MilestoneData milestone = db.getOrCreate(account);
+
+        int xpGain = Math.max(5, avgScore / 3);
+        milestone.experience += xpGain;
+
+        while (milestone.experience >= milestone.experienceToNext) {
+            milestone.experience -= milestone.experienceToNext;
+            milestone.level += 1;
+            milestone.experienceToNext += 50;
+            milestone.xpPerTraining = Math.min(80, milestone.xpPerTraining + 2);
+            milestone.technicalTitle = resolveTitleByLevel(milestone.level);
+        }
+
+        List<Float> trend = parseFloatList(milestone.technicalScoresJson);
+        if (trend == null) {
+            trend = new ArrayList<>();
+        }
+        trend.add((float) avgScore);
+        if (trend.size() > 12) {
+            trend = new ArrayList<>(trend.subList(trend.size() - 12, trend.size()));
+        }
+        milestone.technicalScoresJson = new Gson().toJson(trend);
+
+        float base = avg(trend);
+        float[] radar = new float[]{
+                clamp(base + modeOffset(getString(R.string.train_mode_shoot)), 50f, 99f),
+                clamp(base + modeOffset(getString(R.string.train_mode_pass)), 50f, 99f),
+                clamp(base + modeOffset(getString(R.string.train_mode_dribble)), 50f, 99f),
+                clamp(base - 6f, 45f, 95f),
+                clamp(base - 2f, 45f, 98f),
+                clamp(base, 45f, 99f)
+        };
+        milestone.radarScoresJson = new Gson().toJson(radarToList(radar));
+
+        db.update(milestone);
+    }
+
+    private String resolveTitleByLevel(int level) {
+        if (level >= 10) return getString(R.string.milestone_title_elite);
+        if (level >= 7) return getString(R.string.milestone_title_advanced);
+        if (level >= 4) return getString(R.string.milestone_title_intermediate);
+        return getString(R.string.milestone_title_beginner);
+    }
+
+    private float modeOffset(String mode) {
+        if (mode.equals(currentMode)) {
+            return 4f;
+        }
+        return 0f;
+    }
+
+    private List<Float> parseFloatList(String json) {
+        if (json == null || json.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            Type type = new TypeToken<List<Float>>() { }.getType();
+            List<Float> list = new Gson().fromJson(json, type);
+            return list == null ? null : new ArrayList<>(list);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private float avg(List<Float> values) {
+        if (values == null || values.isEmpty()) {
+            return 75f;
+        }
+        float sum = 0f;
+        for (Float v : values) {
+            sum += (v == null ? 0f : v);
+        }
+        return sum / values.size();
+    }
+
+    private List<Float> radarToList(float[] values) {
+        List<Float> list = new ArrayList<>();
+        for (float value : values) {
+            list.add(value);
+        }
+        return list;
+    }
+
+    private float clamp(float value, float min, float max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     /**
@@ -273,15 +369,15 @@ public class TrainFragment extends Fragment {
         // 1. 模式选择监听（射门/运球/传球切换）
         rgMode.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.rb_shoot) {
-                currentMode = "射门";
+                currentMode = getString(R.string.train_mode_shoot);
             } else if (checkedId == R.id.rb_dribble) {
-                currentMode = "运球";
+                currentMode = getString(R.string.train_mode_dribble);
             } else if (checkedId == R.id.rb_pass) {
-                currentMode = "传球";
+                currentMode = getString(R.string.train_mode_pass);
             }
             // 如果正在识别，实时更新当前动作
             if (isRecognizing) {
-                tvCurrentAction.setText("当前动作：" + currentMode);
+                tvCurrentAction.setText(getString(R.string.train_current_action_format, currentMode));
             }
         });
 
@@ -314,9 +410,10 @@ public class TrainFragment extends Fragment {
 
                         // 更新UI（必须在主线程）
                         requireActivity().runOnUiThread(() -> {
-                            tvCurrentAction.setText("当前动作：" + currentMode);
-                            tvConfidence.setText("置信度：" + String.format("%.2f", randomConfidence));
-                            tvScore.setText("评分：" + randomScore + " 分");
+                            tvCurrentAction.setText(getString(R.string.train_current_action_format, currentMode));
+                            String confidenceText = String.format(Locale.getDefault(), "%.2f", randomConfidence);
+                            tvConfidence.setText(getString(R.string.train_confidence_format, confidenceText));
+                            tvScore.setText(getString(R.string.train_score_format, randomScore));
                         });
 
                         // 每秒执行一次
@@ -331,7 +428,7 @@ public class TrainFragment extends Fragment {
         btnStopRecognize.setOnClickListener(v -> {
             isRecognizing = false;
             stopVideoRecording();
-            updateRecordStatus("视频状态：正在保存，请稍候", false, SAVE_TEXT_WAIT);
+            updateRecordStatus(getString(R.string.train_status_saving), false, getString(R.string.train_save_text_wait));
             // 停止定时任务
             handler.removeCallbacks(recognizeRunnable);
             // UI状态切换：隐藏识别中布局，显示识别完成布局
@@ -341,19 +438,15 @@ public class TrainFragment extends Fragment {
             // 计算平均评分
             int avgScore = actionCount > 0 ? totalScore / actionCount : 0;
             // 更新识别完成结果
-            tvTotalCount.setText(currentMode + "次数：" + actionCount);
-            tvAvgScore.setText("平均评分：" + avgScore);
+            tvTotalCount.setText(getString(R.string.train_total_count_format, currentMode, actionCount));
+            tvAvgScore.setText(getString(R.string.train_avg_score_format, avgScore));
             // 根据模式显示不同的改进建议
-            switch (currentMode) {
-                case "射门":
-                    tvSuggestion.setText("- 支撑脚不稳\n- 射门角度偏低");
-                    break;
-                case "运球":
-                    tvSuggestion.setText("- 运球频率过快\n- 重心偏高");
-                    break;
-                case "传球":
-                    tvSuggestion.setText("- 传球力度不足\n- 传球方向偏差");
-                    break;
+            if (currentMode.equals(getString(R.string.train_mode_shoot))) {
+                tvSuggestion.setText(getString(R.string.train_suggestion_shoot));
+            } else if (currentMode.equals(getString(R.string.train_mode_dribble))) {
+                tvSuggestion.setText(getString(R.string.train_suggestion_dribble));
+            } else if (currentMode.equals(getString(R.string.train_mode_pass))) {
+                tvSuggestion.setText(getString(R.string.train_suggestion_pass));
             }
         });
 
@@ -361,15 +454,15 @@ public class TrainFragment extends Fragment {
         btnSaveResult.setOnClickListener(v -> {
             if (isAdded()) {
                 if (!videoFinalizeDone) {
-                    Toast.makeText(requireContext(), "请先结束识别并等待视频保存完成", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), getString(R.string.train_toast_wait_video_finalize), Toast.LENGTH_SHORT).show();
                     return;
                 }
                 saveTrainRecord();
-                Toast.makeText(requireContext(), "训练结果已保存到本地", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), getString(R.string.train_toast_record_saved), Toast.LENGTH_SHORT).show();
                 // 重置UI状态
                 btnStartRecognize.setVisibility(View.VISIBLE);
                 llRecognized.setVisibility(View.GONE);
-                updateRecordStatus("视频状态：待开始录制", false, SAVE_TEXT_DEFAULT);
+                updateRecordStatus(getString(R.string.train_status_idle), false, getString(R.string.train_save_text_default));
                 updateStartButtonStyle(false);
             }
         });
@@ -390,4 +483,3 @@ public class TrainFragment extends Fragment {
         handler.removeCallbacks(recognizeRunnable);
     }
 }
-
