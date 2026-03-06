@@ -2,17 +2,40 @@ package com.example.football.ui.main.fragments;
 
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.fragment.app.Fragment;
 import com.example.football.R;
 import com.example.football.ui.login.LoginActivity;
 import com.example.football.utils.SPUtils;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 
 public class MineFragment extends Fragment {
+
+    private ImageView ivAvatar;
+    private String avatarSpKey = "avatar_path_default";
+
+    private final ActivityResultLauncher<String> avatarPickerLauncher =
+            registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+                if (uri != null) {
+                    saveAvatar(uri);
+                    loadAvatar();
+                }
+            });
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -20,7 +43,17 @@ public class MineFragment extends Fragment {
 
         TextView tvAccount = view.findViewById(R.id.tv_account);
         String account = SPUtils.getString(getActivity(), "account", "");
-        tvAccount.setText("账号：" + account);
+        tvAccount.setText("账号：" + (TextUtils.isEmpty(account) ? "未登录用户" : account));
+
+        ivAvatar = view.findViewById(R.id.iv_avatar);
+        setupAvatarStyle();
+
+        avatarSpKey = "avatar_path_" + account;
+        ensureAvatarDir();
+        loadAvatar();
+
+        view.findViewById(R.id.btn_upload_avatar).setOnClickListener(v -> avatarPickerLauncher.launch("image/*"));
+        ivAvatar.setOnClickListener(v -> avatarPickerLauncher.launch("image/*"));
 
         view.findViewById(R.id.btn_logout).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -55,5 +88,51 @@ public class MineFragment extends Fragment {
                 .setMessage(helpText)
                 .setPositiveButton("确定", null)
                 .show();
+    }
+
+    private File ensureAvatarDir() {
+        File dir = new File(requireContext().getFilesDir(), "avatars");
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        return dir;
+    }
+
+    private void saveAvatar(Uri uri) {
+        File target = new File(ensureAvatarDir(), avatarSpKey + ".jpg");
+        try (InputStream in = requireContext().getContentResolver().openInputStream(uri);
+             FileOutputStream out = new FileOutputStream(target)) {
+            if (in == null) return;
+            byte[] buffer = new byte[4096];
+            int len;
+            while ((len = in.read(buffer)) != -1) {
+                out.write(buffer, 0, len);
+            }
+            SPUtils.putString(requireContext(), avatarSpKey, target.getAbsolutePath());
+        } catch (Exception e) {
+            Toast.makeText(getActivity(), "头像保存失败", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void setupAvatarStyle() {
+        GradientDrawable avatarBg = new GradientDrawable();
+        avatarBg.setShape(GradientDrawable.OVAL);
+        avatarBg.setColor(0xFFF1F4FB);
+        avatarBg.setStroke(dp(1), 0xFFD7DEEE);
+        ivAvatar.setBackground(avatarBg);
+        ivAvatar.setClipToOutline(true);
+    }
+
+    private int dp(int value) {
+        return Math.round(value * requireContext().getResources().getDisplayMetrics().density);
+    }
+
+    private void loadAvatar() {
+        String path = SPUtils.getString(requireContext(), avatarSpKey, "");
+        if (!TextUtils.isEmpty(path) && new File(path).exists()) {
+            ivAvatar.setImageBitmap(BitmapFactory.decodeFile(path));
+        } else {
+            ivAvatar.setImageDrawable(null); // 初始空白（保留圆形底）
+        }
     }
 }
