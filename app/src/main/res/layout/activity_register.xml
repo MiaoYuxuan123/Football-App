@@ -56,4 +56,13 @@
         android:textColor="#FFFFFF"
         android:textSize="18sp"/>
 
+    <!-- 登录入口 -->
+    <TextView
+        android:id="@+id/tv_go_login"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="已有账号，去登录"
+        android:textColor="#008000"
+        android:layout_marginTop="20dp"/>
+
 </LinearLayout>
