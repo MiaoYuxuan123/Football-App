@@ -1,17 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
-    <!-- 网络权限 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 基础权限 -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- 允许使用网络状态 -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!-- 相机权限（训练识别必须） -->
-    <uses-permission android:name="android.permission.CAMERA"/>
-    <!-- 存储权限（保存训练记录） -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <!-- 声明需要相机硬件 -->
-    <uses-feature android:name="android.hardware.camera" android:required="true"/>
+    <!-- 相机权限 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="true" />
+    <!-- 注意：CAMERA_BACKGROUND 仅Android 14+支持，低版本会自动忽略该权限 -->
+    <uses-permission android:name="android.permission.CAMERA_BACKGROUND" />
+
+    <!-- 存储权限（Android 10+ 推荐使用作用域存储） -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
 
     <application
         android:allowBackup="true"
@@ -19,45 +25,52 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Football"
-        android:networkSecurityConfig="@xml/network_security_config">
+        android:theme="@style/Theme.Football">
 
-
-        <!-- 启动页：SplashActivity（核心！设为入口） -->
+        <!-- 启动页（唯一exported=true的入口） -->
         <activity
             android:name=".ui.splash.SplashActivity"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-
+        <!-- 其他Activity（均为exported=false） -->
         <activity
-            android:name=".ui.result.ResultDetailActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.login.RegisterActivity"
+            android:name=".ui.main.MainActivity"
             android:exported="false" />
         <activity
             android:name=".ui.login.LoginActivity"
             android:exported="false" />
         <activity
-            android:name=".ui.main.MainActivity"
-            android:exported="false"/>
+            android:name=".ui.login.RegisterActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.result.ResultDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.train.TrainRecognitionActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.train.VideoPlayerActivity"
+            android:exported="false" />
 
-<!--        <activity-->
-<!--            android:name=".ui.main.MainActivity"-->
-<!--            android:exported="true">-->
-<!--            <intent-filter>-->
-<!--                <action android:name="android.intent.action.MAIN" />-->
-
-<!--                <category android:name="android.intent.category.LAUNCHER" />-->
-<!--            </intent-filter>-->
-<!--        </activity>-->
+        <!-- FileProvider（相机拍照/存储用） -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>
