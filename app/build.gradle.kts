@@ -43,4 +43,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    implementation("com.squareup.okhttp3:okhttp:5.3.2")
+// 可选：如果需要处理JSON，添加Gson
+    implementation("com.google.code.gson:gson:2.13.2")
 }
