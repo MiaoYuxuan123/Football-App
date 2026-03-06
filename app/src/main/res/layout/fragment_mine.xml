@@ -3,16 +3,46 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:gravity="center"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:padding="20dp">
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="个人中心页面"
-        android:textSize="20sp"/>
+        android:text="个人主页"
+        android:textSize="24sp"
+        android:textColor="#008000"
+        android:textStyle="bold"
+        android:layout_marginBottom="30dp"/>
+
+    <TextView
+        android:id="@+id/tv_account"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="账号："
+        android:textSize="18sp"
+        android:textColor="#333333"
+        android:layout_marginBottom="40dp"/>
+
     <Button
         android:id="@+id/btn_logout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="退出登录"
-        android:layout_marginTop="20dp"/>
+        android:background="#008000"
+        android:textColor="#FFFFFF"
+        android:paddingLeft="30dp"
+        android:paddingRight="30dp"
+        android:layout_marginBottom="20dp"/>
+
+    <Button
+        android:id="@+id/btn_help"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="帮助"
+        android:background="#4CAF50"
+        android:textColor="#FFFFFF"
+        android:paddingLeft="30dp"
+        android:paddingRight="30dp"/>
+
 </LinearLayout>
