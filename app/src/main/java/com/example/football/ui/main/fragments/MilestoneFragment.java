@@ -50,6 +50,7 @@ public class MilestoneFragment extends Fragment {
     private TextView tvTechnicalTitle;
     private TextView tvExperience;
     private TextView tvTrainingInfo;
+    private TextView tvTrainCount;
     private TextView tvBadges;
     private LineChart chartTrend;
     private RadarChart chartRadar;
@@ -90,6 +91,7 @@ public class MilestoneFragment extends Fragment {
         tvTechnicalTitle = view.findViewById(R.id.tvTechnicalTitle);
         tvExperience = view.findViewById(R.id.tvExperience);
         tvTrainingInfo = view.findViewById(R.id.tvTrainingInfo);
+        tvTrainCount = view.findViewById(R.id.tvTrainCount);
         tvBadges = view.findViewById(R.id.tvBadges);
         chartTrend = view.findViewById(R.id.chartTrend);
         chartRadar = view.findViewById(R.id.chartRadar);
@@ -114,6 +116,7 @@ public class MilestoneFragment extends Fragment {
         int remain = Math.max(0, data.experienceToNext - data.experience);
         int times = data.xpPerTraining > 0 ? (remain + data.xpPerTraining - 1) / data.xpPerTraining : 0;
         tvTrainingInfo.setText(getString(R.string.milestone_training_info_format, times, data.xpPerTraining));
+        tvTrainCount.setText(getString(R.string.milestone_train_count_format, data.trainCount));
 
         android.widget.ProgressBar pb = rootView.findViewById(R.id.progressBarExperience);
         pb.setMax(Math.max(1, data.experienceToNext));

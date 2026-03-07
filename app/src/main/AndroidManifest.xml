@@ -60,6 +60,9 @@
         <activity
             android:name=".ui.train.VideoPlayerActivity"
             android:exported="false" />
+        <activity
+            android:name=".ui.train.TrainRecordsActivity"
+            android:exported="false" />
 
         <!-- FileProvider（相机拍照/存储用） -->
         <provider
