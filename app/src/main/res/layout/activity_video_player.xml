@@ -3,18 +3,19 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/md_background"
     android:orientation="vertical"
     android:padding="12dp">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:paddingBottom="8dp"
         android:text="训练视频回放"
-        android:textStyle="bold"
+        android:textColor="@color/md_textPrimary"
         android:textSize="18sp"
-        android:paddingBottom="8dp" />
+        android:textStyle="bold" />
 
-    <!-- 使用 ExoPlayer 的 PlayerView 替代原来的 VideoView -->
     <com.google.android.exoplayer2.ui.PlayerView
         android:id="@+id/player_view"
         android:layout_width="match_parent"
@@ -27,8 +28,9 @@
         android:id="@+id/tv_video_path"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="12sp"
+        android:maxLines="3"
         android:paddingTop="8dp"
-        android:maxLines="3" />
+        android:textColor="@color/md_textSecondary"
+        android:textSize="12sp" />
 
 </LinearLayout>

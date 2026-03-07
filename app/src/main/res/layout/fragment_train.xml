@@ -2,8 +2,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#000000">
+    android:background="#000000"
+    android:orientation="vertical">
 
     <!-- 1. 相机预览窗口 -->
     <FrameLayout
@@ -21,43 +21,43 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#1AFFFFFF"
-        android:padding="15dp"
-        android:gravity="center">
+        android:background="#EFFFFFFF"
+        android:gravity="center"
+        android:padding="14dp">
 
         <RadioGroup
             android:id="@+id/rg_mode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center">
+            android:gravity="center"
+            android:orientation="horizontal">
 
             <RadioButton
                 android:id="@+id/rb_shoot"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="射门"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
+                android:layout_marginRight="18dp"
                 android:checked="true"
-                android:layout_marginRight="20dp"/>
+                android:text="射门"
+                android:textColor="#1F2A44"
+                android:textSize="15sp" />
 
             <RadioButton
                 android:id="@+id/rb_dribble"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginRight="18dp"
                 android:text="运球"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:layout_marginRight="20dp"/>
+                android:textColor="#1F2A44"
+                android:textSize="15sp" />
 
             <RadioButton
                 android:id="@+id/rb_pass"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="传球"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"/>
+                android:textColor="#1F2A44"
+                android:textSize="15sp" />
         </RadioGroup>
     </LinearLayout>
 
@@ -66,69 +66,69 @@
         android:id="@+id/btn_start_recognize"
         android:layout_width="match_parent"
         android:layout_height="50dp"
+        android:layout_margin="15dp"
+        android:background="@color/md_primary"
         android:text="开始识别"
         android:textColor="#FFFFFF"
-        android:background="#008000"
-        android:textSize="18sp"
-        android:layout_margin="15dp"/>
+        android:textSize="18sp" />
 
     <!-- 4. 识别中结果区 -->
     <LinearLayout
         android:id="@+id/ll_recognizing"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#26FFFFFF"
-        android:padding="20dp"
+        android:background="#EFFFFFFF"
         android:orientation="vertical"
+        android:padding="20dp"
         android:visibility="gone">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="识别中..."
-            android:textColor="#FFFFFF"
-            android:textSize="20sp"
             android:layout_gravity="center"
-            android:layout_marginBottom="10dp"/>
+            android:layout_marginBottom="10dp"
+            android:text="识别中..."
+            android:textColor="@color/md_textPrimary"
+            android:textSize="20sp" />
 
         <TextView
             android:id="@+id/tv_current_action"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="当前动作：射门"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"
             android:layout_gravity="center"
-            android:layout_marginBottom="5dp"/>
+            android:layout_marginBottom="5dp"
+            android:text="当前动作：射门"
+            android:textColor="@color/md_textPrimary"
+            android:textSize="16sp" />
 
         <TextView
             android:id="@+id/tv_confidence"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="置信度：0.87"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"
             android:layout_gravity="center"
-            android:layout_marginBottom="5dp"/>
+            android:layout_marginBottom="5dp"
+            android:text="置信度：0.87"
+            android:textColor="@color/md_textPrimary"
+            android:textSize="16sp" />
 
         <TextView
             android:id="@+id/tv_score"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center"
             android:text="评分：82 分"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"
-            android:layout_gravity="center"/>
+            android:textColor="@color/md_textPrimary"
+            android:textSize="16sp" />
 
         <Button
             android:id="@+id/btn_stop_recognize"
             android:layout_width="match_parent"
             android:layout_height="40dp"
+            android:layout_marginTop="15dp"
+            android:background="#EA4335"
             android:text="结束识别"
             android:textColor="#FFFFFF"
-            android:background="#FF4444"
-            android:textSize="16sp"
-            android:layout_marginTop="15dp"/>
+            android:textSize="16sp" />
     </LinearLayout>
 
     <!-- 5. 识别完成结果区 -->
@@ -136,69 +136,69 @@
         android:id="@+id/ll_recognized"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#26FFFFFF"
-        android:padding="20dp"
+        android:background="#EFFFFFFF"
         android:orientation="vertical"
+        android:padding="20dp"
         android:visibility="gone">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="训练完成"
-            android:textColor="#FFFFFF"
-            android:textSize="22sp"
             android:layout_gravity="center"
-            android:layout_marginBottom="15dp"/>
+            android:layout_marginBottom="15dp"
+            android:text="训练完成"
+            android:textColor="@color/md_textPrimary"
+            android:textSize="22sp" />
 
         <TextView
             android:id="@+id/tv_total_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="射门次数：20"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp"
             android:layout_gravity="center"
-            android:layout_marginBottom="5dp"/>
+            android:layout_marginBottom="5dp"
+            android:text="射门次数：20"
+            android:textColor="@color/md_textPrimary"
+            android:textSize="18sp" />
 
         <TextView
             android:id="@+id/tv_avg_score"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="平均评分：78"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp"
             android:layout_gravity="center"
-            android:layout_marginBottom="10dp"/>
+            android:layout_marginBottom="10dp"
+            android:text="平均评分：78"
+            android:textColor="@color/md_textPrimary"
+            android:textSize="18sp" />
 
         <TextView
             android:id="@+id/tv_suggestion"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center"
             android:text="- 支撑脚不稳\n- 射门角度偏低"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"
-            android:layout_gravity="center"/>
+            android:textColor="@color/md_textSecondary"
+            android:textSize="16sp" />
 
         <TextView
             android:id="@+id/tv_recording_state"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="视频状态：未录制"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
             android:layout_gravity="center"
             android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="8dp"
+            android:text="视频状态：未录制"
+            android:textColor="@color/md_textSecondary"
+            android:textSize="14sp" />
 
         <Button
             android:id="@+id/btn_save_result"
             android:layout_width="match_parent"
             android:layout_height="40dp"
+            android:layout_marginTop="15dp"
+            android:background="@color/md_primary"
             android:text="保存训练结果"
             android:textColor="#FFFFFF"
-            android:background="#008000"
-            android:textSize="16sp"
-            android:layout_marginTop="15dp"/>
+            android:textSize="16sp" />
     </LinearLayout>
 
 </LinearLayout>

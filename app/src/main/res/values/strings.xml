@@ -10,7 +10,8 @@
     <string name="milestone_title_badges">🎖 我的徽章</string>
     <string name="milestone_level_format">Lv.%1$d</string>
     <string name="milestone_experience_format">%1$d / %2$d</string>
-    <string name="milestone_training_info_format">再训练 %1$d 次 -> +%2$d XP</string>
+    <string name="milestone_training_info_format">再训练 %1$d 次 -&gt; +%2$d XP</string>
+    <string name="milestone_train_count_format">累计训练：%1$d 次</string>
     <string name="milestone_badge_format">%1$s %2$s</string>
     <string name="milestone_badge_default">✅ 初级射手   ✅ 连训3天   🔒 百次射门</string>
     <string name="milestone_badge_status_unlocked">✅</string>
@@ -26,7 +27,8 @@
     <string name="milestone_level_preview">Lv.3</string>
     <string name="milestone_technical_title_preview">初级进阶者</string>
     <string name="milestone_experience_preview">320 / 500</string>
-    <string name="milestone_training_info_preview">再训练 1 次 -> +30 XP</string>
+    <string name="milestone_training_info_preview">再训练 1 次 -&gt; +30 XP</string>
+    <string name="milestone_train_count_preview">累计训练：12 次</string>
 
     <string name="train_mode_shoot">射门</string>
     <string name="train_mode_dribble">运球</string>
@@ -68,4 +70,44 @@
     <string name="milestone_title_intermediate">进阶球员</string>
     <string name="milestone_title_advanced">高级球员</string>
     <string name="milestone_title_elite">精英射手</string>
+
+    <string name="home_total_count_format">累计训练：%1$d 次</string>
+    <string name="home_mode_breakdown_format">射门 %1$d | 运球 %2$d | 传球 %3$d</string>
+    <string name="home_success_rate_format">成功率：%1$d%%  平均分：%2$d  Lv.%3$d</string>
+    <string name="home_greeting_format">欢迎回来，%1$s</string>
+    <string name="home_recommendation_beginner">先进行 8-12 分钟基础训练，再进入专项动作识别。</string>
+    <string name="home_recommendation_normal">建议今天重点强化薄弱动作，先做 2 组基础训练再冲击高分。</string>
+    <string name="home_recommendation_advanced">状态很好！可以尝试提升节奏并挑战更高稳定性，冲击精英评分。</string>
+    <string name="home_focus_mode_format">重点动作：%1$s</string>
+    <string name="home_focus_volume_format">建议训练量：2 组 x 12 次</string>
+    <string name="home_focus_goal_format">目标均分：%1$d+</string>
+
+    <string name="home_greeting_preview">欢迎回来，球员</string>
+    <string name="home_banner_subtitle">今天继续训练，刷新你的技术评分</string>
+    <string name="home_start_train">立即开始训练</string>
+    <string name="home_today_status_preview">今日已训练 0 次 | 还差 1 次打卡</string>
+    <string name="home_today_status_format">今日已训练 %1$d 次 | 还差 %2$d 次打卡</string>
+    <string name="home_focus_title">今日训练重点</string>
+    <string name="home_focus_mode_preview">重点动作：射门</string>
+    <string name="home_focus_goal_preview">目标均分：80+</string>
+    <string name="home_overview_title">训练概览</string>
+    <string name="home_total_count_preview">累计训练：0 次</string>
+    <string name="home_mode_breakdown_preview">射门 0 | 运球 0 | 传球 0</string>
+    <string name="home_success_rate_preview">成功率：0%%  平均分：0  Lv.1</string>
+    <string name="home_recommend_train_title">推荐训练</string>
+    <string name="home_recommend_item_1_preview">基础射门训练 | 12 分钟 | 难度: 低</string>
+    <string name="home_recommend_item_1_format">%1$s专项训练 | 12 分钟 | 难度: 中</string>
+    <string name="home_recommend_item_2">核心力量训练 | 10 分钟 | 难度: 中</string>
+    <string name="home_recommend_item_3">动态拉伸恢复 | 8 分钟 | 难度: 低</string>
+    <string name="home_recommend_item_3_format">稳定性提升训练 | 9 分钟 | 预计评分提升 %1$d%%</string>
+    <string name="home_recommend_meta_default">12 分钟 · 难度: 中 · 预计提升稳定性</string>
+    <string name="home_recommend_meta_core">10 分钟 · 难度: 中 · 强化核心与爆发</string>
+    <string name="home_recommend_meta_recovery">8 分钟 · 难度: 低 · 缓解疲劳并防伤</string>
+    <string name="home_recommend_meta_mode">12 分钟 · %1$s专项 · 推荐优先完成</string>
+    <string name="home_recommend_cta">点击开始训练</string>
+    <string name="home_suggestion_title">今日建议</string>
+    <string name="home_player_default">球员</string>
+    <string name="home_recommend_label_1">推荐动作</string>
+    <string name="home_recommend_label_2">核心强化</string>
+    <string name="home_recommend_label_3">恢复放松</string>
 </resources>
