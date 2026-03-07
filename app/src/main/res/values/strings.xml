@@ -44,6 +44,9 @@
     <string name="train_status_saving">视频状态：正在保存，请稍候</string>
     <string name="train_status_ready">视频状态：已保存，可回放</string>
     <string name="train_status_save_failed">视频状态：保存失败，请重录</string>
+    <string name="train_status_post_processing">视频状态：正在生成关键点视频</string>
+    <string name="train_status_post_processing_progress">视频状态：关键点处理中 %1$d%%</string>
+    <string name="train_status_post_process_failed">视频状态：关键点处理失败，已保留原视频</string>
 
     <string name="train_toast_need_camera_permission">请先允许相机权限</string>
     <string name="train_toast_camera_init_failed">相机初始化失败：%1$s</string>
@@ -54,6 +57,10 @@
     <string name="train_toast_video_save_failed">视频保存失败，请点击重新录制</string>
     <string name="train_toast_wait_video_finalize">请先结束识别并等待视频保存完成</string>
     <string name="train_toast_record_saved">训练结果已保存到本地</string>
+
+    <string name="train_toast_pose_video_ready">关键点视频生成完成，可直接播放</string>
+    <string name="train_toast_pose_video_failed">关键点视频生成失败，已回退原视频</string>
+    <string name="train_toast_wait_post_process">关键点视频还在处理中，请稍候</string>
 
     <string name="train_suggestion_shoot">- 支撑脚不稳\n- 射门角度偏低</string>
     <string name="train_suggestion_dribble">- 运球频率过快\n- 重心偏高</string>

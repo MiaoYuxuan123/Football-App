@@ -55,9 +55,6 @@
             android:name=".ui.result.ResultDetailActivity"
             android:exported="false" />
         <activity
-            android:name=".ui.train.TrainRecognitionActivity"
-            android:exported="false" />
-        <activity
             android:name=".ui.train.VideoPlayerActivity"
             android:exported="false" />
         <activity

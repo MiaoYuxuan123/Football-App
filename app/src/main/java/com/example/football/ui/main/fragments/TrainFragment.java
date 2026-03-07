@@ -1,11 +1,12 @@
 package com.example.football.ui.main.fragments;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,25 +22,10 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageAnalysis;
+import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
-import androidx.camera.view.PreviewView;
-import androidx.core.content.ContextCompat;
-import androidx.fragment.app.Fragment;
-
-import com.example.football.R;
-import com.example.football.database.MilestoneDbHelper;
-import com.example.football.utils.SPUtils;
-import com.google.common.util.concurrent.ListenableFuture;
-
-import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Locale;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import androidx.camera.video.FallbackStrategy;
 import androidx.camera.video.FileOutputOptions;
 import androidx.camera.video.Quality;
@@ -48,6 +34,36 @@ import androidx.camera.video.Recorder;
 import androidx.camera.video.Recording;
 import androidx.camera.video.VideoCapture;
 import androidx.camera.video.VideoRecordEvent;
+import androidx.camera.view.PreviewView;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+
+import com.example.football.R;
+import com.example.football.database.MilestoneDbHelper;
+import com.example.football.database.entity.MilestoneData;
+import com.example.football.ui.train.VideoPlayerActivity;
+import com.example.football.utils.SPUtils;
+import com.example.football.video.PoseVideoProcessor;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.google.mediapipe.framework.image.MPImage;
+import com.google.mediapipe.framework.image.BitmapImageBuilder;
+import com.google.mediapipe.tasks.components.containers.NormalizedLandmark;
+import com.google.mediapipe.tasks.core.BaseOptions;
+import com.google.mediapipe.tasks.vision.core.ImageProcessingOptions;
+import com.google.mediapipe.tasks.vision.core.RunningMode;
+import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker;
+import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult;
+
+import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.nio.ByteBuffer;
 
 public class TrainFragment extends Fragment {
 
@@ -61,25 +77,31 @@ public class TrainFragment extends Fragment {
 
     // CameraX 相关
     private ExecutorService cameraExecutor;
+    private ExecutorService postProcessExecutor;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private VideoCapture<Recorder> videoCapture;
+    private ImageAnalysis imageAnalysis;
     private Recording activeRecording;
     private String lastVideoPath = "";
+    private PoseVideoProcessor poseVideoProcessor;
+    private volatile boolean isPostProcessing = false;
+
+    // MediaPipe 相关
+    private PoseLandmarker poseLandmarker;
 
     // 识别状态控制
     private boolean isRecognizing = false;
     private String currentMode = "";
-    private int actionCount = 0; // 动作计数
-    private int totalScore = 0; // 总评分
-    private final Handler handler = new Handler(Looper.getMainLooper());
-    private Runnable recognizeRunnable; // 模拟识别的定时任务
+    private int actionCount = 0;
+    private int totalScore = 0;
+    private long lastRepTimestampMs = 0L;
+    private long poseResultCount = 0L;
+    private long poseEmptyCount = 0L;
+    private long poseErrorCount = 0L;
 
     private static final String TAG = "TrainFragment";
     private static final String SP_KEY_TRAIN_RECORDS = "train_records";
-    private static final String ARG_PRESET_MODE = "arg_preset_mode";
-    public static final String MODE_KEY_SHOOT = "shoot";
-    public static final String MODE_KEY_DRIBBLE = "dribble";
-    public static final String MODE_KEY_PASS = "pass";
+    private static final long REP_INTERVAL_MS = 900L;
 
     private String pendingVideoPath = "";
     private boolean videoFinalizeDone = false;
@@ -96,14 +118,11 @@ public class TrainFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        // 加载训练识别布局
         View view = inflater.inflate(R.layout.fragment_train, container, false);
 
-        // 1. 初始化所有控件
         initViews(view);
-        // 2. 检查权限后再初始化相机预览
+        initPoseLandmarker();
         startCameraFlow();
-        // 3. 设置所有点击事件和监听
         setViewListeners();
 
         return view;
@@ -118,22 +137,17 @@ public class TrainFragment extends Fragment {
         }
     }
 
-    /**
-     * 初始化所有控件（绑定ID）
-     */
     private void initViews(View view) {
-        // 相机预览
         previewView = view.findViewById(R.id.previewView);
-        // 模式选择
+        // Ensure overlay can be drawn above preview (SurfaceView mode may hide sibling views).
+        previewView.setImplementationMode(PreviewView.ImplementationMode.COMPATIBLE);
+        previewView.setScaleType(PreviewView.ScaleType.FILL_CENTER);
         rgMode = view.findViewById(R.id.rg_mode);
-        // 按钮
         btnStartRecognize = view.findViewById(R.id.btn_start_recognize);
         btnStopRecognize = view.findViewById(R.id.btn_stop_recognize);
         btnSaveResult = view.findViewById(R.id.btn_save_result);
-        // 识别状态布局
         llRecognizing = view.findViewById(R.id.ll_recognizing);
         llRecognized = view.findViewById(R.id.ll_recognized);
-        // 识别结果文本
         tvCurrentAction = view.findViewById(R.id.tv_current_action);
         tvConfidence = view.findViewById(R.id.tv_confidence);
         tvScore = view.findViewById(R.id.tv_score);
@@ -142,27 +156,40 @@ public class TrainFragment extends Fragment {
         tvSuggestion = view.findViewById(R.id.tv_suggestion);
         tvRecordingState = view.findViewById(R.id.tv_recording_state);
 
-        String presetMode = getArguments() != null ? getArguments().getString(ARG_PRESET_MODE, "") : "";
-        if (MODE_KEY_DRIBBLE.equals(presetMode)) {
-            rgMode.check(R.id.rb_dribble);
-        } else if (MODE_KEY_PASS.equals(presetMode)) {
-            rgMode.check(R.id.rb_pass);
-        } else if (MODE_KEY_SHOOT.equals(presetMode)) {
-            rgMode.check(R.id.rb_shoot);
-        }
-
-        if (rgMode.getCheckedRadioButtonId() == R.id.rb_dribble) {
-            currentMode = getString(R.string.train_mode_dribble);
-        } else if (rgMode.getCheckedRadioButtonId() == R.id.rb_pass) {
-            currentMode = getString(R.string.train_mode_pass);
-        } else {
-            currentMode = getString(R.string.train_mode_shoot);
-        }
-
-        // 初始化相机线程池
         cameraExecutor = Executors.newSingleThreadExecutor();
+        postProcessExecutor = Executors.newSingleThreadExecutor();
+        poseVideoProcessor = new PoseVideoProcessor();
+        currentMode = getString(R.string.train_mode_shoot);
+        tvCurrentAction.setText(getString(R.string.train_current_action_format, currentMode));
+
         updateRecordStatus(getString(R.string.train_status_idle), false, getString(R.string.train_save_text_default));
         updateStartButtonStyle(false);
+    }
+
+    private void initPoseLandmarker() {
+        try {
+            BaseOptions baseOptions = BaseOptions.builder()
+                    .setModelAssetPath("pose_landmarker_lite.task")
+                    .build();
+
+            PoseLandmarker.PoseLandmarkerOptions options = PoseLandmarker.PoseLandmarkerOptions.builder()
+                    .setBaseOptions(baseOptions)
+                    .setRunningMode(RunningMode.LIVE_STREAM)
+                    .setNumPoses(1)
+                    .setMinPoseDetectionConfidence(0.6f)
+                    .setMinPosePresenceConfidence(0.65f)
+                    .setMinTrackingConfidence(0.65f)
+                    .setResultListener((result, input) -> onPoseResult(result))
+                    .setErrorListener(error -> onPoseError(error))
+                    .build();
+
+            poseLandmarker = PoseLandmarker.createFromOptions(requireContext(), options);
+        } catch (Exception e) {
+            Log.e(TAG, "initPoseLandmarker failed", e);
+            if (isAdded()) {
+                Toast.makeText(requireContext(), "MediaPipe 初始化失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     private void updateRecordStatus(String text, boolean canSave, String saveButtonText) {
@@ -176,36 +203,234 @@ public class TrainFragment extends Fragment {
         btnStartRecognize.setBackgroundColor(isRetry ? Color.parseColor("#FF9800") : Color.parseColor("#008000"));
     }
 
-    /**
-     * 初始化相机预览（打开后置摄像头）
-     */
     private void initCameraPreview() {
         cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext());
-        // 相机初始化回调
         cameraProviderFuture.addListener(() -> {
             try {
                 ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
-
-                Preview preview = new Preview.Builder().build();
-                preview.setSurfaceProvider(previewView.getSurfaceProvider());
-
-                Recorder recorder = new Recorder.Builder()
-                        .setQualitySelector(QualitySelector.fromOrderedList(
-                                Arrays.asList(Quality.FHD, Quality.HD, Quality.SD),
-                                FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)))
-                        .build();
-                videoCapture = VideoCapture.withOutput(recorder);
-
-                CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
-                cameraProvider.unbindAll();
-                cameraProvider.bindToLifecycle(getViewLifecycleOwner(), cameraSelector, preview, videoCapture);
+                bindCameraUseCases(cameraProvider);
             } catch (Exception e) {
-                // 相机初始化失败提示
                 if (isAdded()) {
                     Toast.makeText(requireContext(), getString(R.string.train_toast_camera_init_failed, e.getMessage()), Toast.LENGTH_SHORT).show();
                 }
             }
         }, ContextCompat.getMainExecutor(requireContext()));
+    }
+
+    private void bindCameraUseCases(ProcessCameraProvider cameraProvider) {
+        Preview preview = new Preview.Builder().build();
+        preview.setSurfaceProvider(previewView.getSurfaceProvider());
+
+        Recorder recorder = new Recorder.Builder()
+                .setQualitySelector(QualitySelector.fromOrderedList(
+                        Arrays.asList(Quality.FHD, Quality.HD, Quality.SD),
+                        FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)))
+                .build();
+        videoCapture = VideoCapture.withOutput(recorder);
+
+        imageAnalysis = new ImageAnalysis.Builder()
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                .build();
+        imageAnalysis.setAnalyzer(cameraExecutor, this::analyzeImageProxy);
+
+        CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
+        cameraProvider.unbindAll();
+        cameraProvider.bindToLifecycle(getViewLifecycleOwner(), cameraSelector, preview, videoCapture, imageAnalysis);
+    }
+
+    private void analyzeImageProxy(@NonNull ImageProxy imageProxy) {
+        if (poseLandmarker == null) {
+            imageProxy.close();
+            return;
+        }
+
+        try {
+            int rotationDegrees = imageProxy.getImageInfo().getRotationDegrees();
+            Bitmap frameBitmap = imageProxyToBitmap(imageProxy);
+            MPImage mpImage = new BitmapImageBuilder(frameBitmap).build();
+            ImageProcessingOptions imageProcessingOptions = ImageProcessingOptions.builder()
+                    .setRotationDegrees(rotationDegrees)
+                    .build();
+            long timestampMs = SystemClock.elapsedRealtimeNanos() / 1_000_000;
+            poseLandmarker.detectAsync(mpImage, imageProcessingOptions, timestampMs);
+        } catch (Exception e) {
+            Log.e(TAG, "analyzeImageProxy failed", e);
+        } finally {
+            imageProxy.close();
+        }
+    }
+
+    private Bitmap imageProxyToBitmap(@NonNull ImageProxy imageProxy) {
+        ImageProxy.PlaneProxy[] planes = imageProxy.getPlanes();
+        if (planes.length == 0) {
+            throw new IllegalStateException("RGBA plane is missing");
+        }
+
+        int width = imageProxy.getWidth();
+        int height = imageProxy.getHeight();
+        ImageProxy.PlaneProxy plane = planes[0];
+        ByteBuffer buffer = plane.getBuffer();
+        buffer.rewind();
+
+        int rowStride = plane.getRowStride();
+        int pixelStride = plane.getPixelStride();
+        if (pixelStride != 4) {
+            throw new IllegalStateException("Unexpected pixelStride=" + pixelStride);
+        }
+
+        int rowPadding = rowStride - pixelStride * width;
+        if (rowPadding == 0) {
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            bitmap.copyPixelsFromBuffer(buffer);
+            return bitmap;
+        }
+
+        int paddedWidth = rowStride / pixelStride;
+        Bitmap paddedBitmap = Bitmap.createBitmap(paddedWidth, height, Bitmap.Config.ARGB_8888);
+        paddedBitmap.copyPixelsFromBuffer(buffer);
+        Bitmap croppedBitmap = Bitmap.createBitmap(paddedBitmap, 0, 0, width, height);
+        paddedBitmap.recycle();
+        return croppedBitmap;
+    }
+
+    private void onPoseResult(PoseLandmarkerResult result) {
+        poseResultCount++;
+        if (!isAdded()) {
+            return;
+        }
+
+        List<List<NormalizedLandmark>> allLandmarks = result.landmarks();
+        if (allLandmarks == null || allLandmarks.isEmpty()) {
+            poseEmptyCount++;
+             if (poseResultCount % 30 == 0) {
+                 Log.d(TAG, "pose callback alive, empty=" + poseEmptyCount + "/" + poseResultCount);
+             }
+             return;
+        }
+
+        List<NormalizedLandmark> firstPose = allLandmarks.get(0);
+        float confidence = calculatePoseConfidence(firstPose);
+        int frameScore = calculateFrameScore(confidence);
+
+        if (isRecognizing) {
+            maybeCountRep(confidence, frameScore);
+        }
+
+        requireActivity().runOnUiThread(() -> {
+             String confidenceText = String.format(Locale.getDefault(), "%.2f", confidence);
+             tvConfidence.setText(getString(R.string.train_confidence_format, confidenceText));
+             tvScore.setText(getString(R.string.train_score_format, frameScore));
+             if (isRecognizing) {
+                tvCurrentAction.setText(getString(R.string.train_current_action_format, currentMode));
+            }
+        });
+
+        if (poseResultCount % 30 == 0) {
+            Log.d(TAG, "pose draw ok, landmarks=" + firstPose.size() + ", conf=" + confidence);
+        }
+    }
+
+    private void onPoseError(RuntimeException error) {
+        poseErrorCount++;
+        Log.e(TAG, "PoseLandmarker runtime error count=" + poseErrorCount, error);
+    }
+
+    private void maybeCountRep(float confidence, int frameScore) {
+        long now = SystemClock.elapsedRealtime();
+        if (confidence < 0.5f || frameScore < 60) {
+            return;
+        }
+        if (now - lastRepTimestampMs < REP_INTERVAL_MS) {
+            return;
+        }
+        lastRepTimestampMs = now;
+        actionCount++;
+        totalScore += frameScore;
+    }
+
+    private float calculatePoseConfidence(List<NormalizedLandmark> landmarks) {
+        if (landmarks == null || landmarks.isEmpty()) {
+            return 0f;
+        }
+        float sum = 0f;
+        int count = 0;
+        for (NormalizedLandmark landmark : landmarks) {
+            float visibility = landmark.visibility().orElse(0f);
+            sum += visibility;
+            count++;
+        }
+        return count == 0 ? 0f : (sum / count);
+    }
+
+    private int calculateFrameScore(float confidence) {
+        int score = Math.round(confidence * 100f);
+        return Math.max(0, Math.min(100, score));
+    }
+
+    private void startOfflinePosePostProcess(@NonNull String rawVideoPath) {
+        if (isPostProcessing) {
+            return;
+        }
+        final android.content.Context appContext = requireContext().getApplicationContext();
+        isPostProcessing = true;
+        updateRecordStatus(getString(R.string.train_status_post_processing), false, getString(R.string.train_save_text_wait));
+
+        File rawFile = new File(rawVideoPath);
+        File parent = rawFile.getParentFile();
+        if (parent == null) {
+            isPostProcessing = false;
+            videoFinalizeDone = true;
+            updateRecordStatus(getString(R.string.train_status_ready), true, getString(R.string.train_save_text_default));
+            return;
+        }
+        String outputName = "pose_" + rawFile.getName();
+        File outputFile = new File(parent, outputName);
+
+        postProcessExecutor.execute(() -> poseVideoProcessor.process(
+                appContext,
+                rawVideoPath,
+                outputFile.getAbsolutePath(),
+                new PoseVideoProcessor.Callback() {
+                    @Override
+                    public void onProgress(int progress) {
+                        if (!isAdded()) {
+                            return;
+                        }
+                        requireActivity().runOnUiThread(() -> tvRecordingState.setText(
+                                getString(R.string.train_status_post_processing_progress, progress)
+                        ));
+                    }
+
+                    @Override
+                    public void onCompleted(@NonNull String outputPath) {
+                        isPostProcessing = false;
+                        videoFinalizeDone = true;
+                        lastVideoPath = outputPath;
+                        if (!isAdded()) {
+                            return;
+                        }
+                        requireActivity().runOnUiThread(() -> {
+                            updateRecordStatus(getString(R.string.train_status_ready), true, getString(R.string.train_save_text_default));
+                            Toast.makeText(requireContext(), getString(R.string.train_toast_pose_video_ready), Toast.LENGTH_SHORT).show();
+                        });
+                    }
+
+                    @Override
+                    public void onFailed(@NonNull Exception error) {
+                        isPostProcessing = false;
+                        videoFinalizeDone = true;
+                        if (!isAdded()) {
+                            return;
+                        }
+                        requireActivity().runOnUiThread(() -> {
+                            updateRecordStatus(getString(R.string.train_status_post_process_failed), true, getString(R.string.train_save_text_default));
+                            Toast.makeText(requireContext(), getString(R.string.train_toast_pose_video_failed), Toast.LENGTH_SHORT).show();
+                        });
+                        Log.e(TAG, "offline pose process failed", error);
+                    }
+                }
+        ));
     }
 
     private void startVideoRecording() {
@@ -231,6 +456,7 @@ public class TrainFragment extends Fragment {
         pendingVideoPath = videoFile.getAbsolutePath();
         lastVideoPath = "";
         videoFinalizeDone = false;
+        isPostProcessing = false;
         btnSaveResult.setEnabled(false);
         updateRecordStatus(getString(R.string.train_status_recording), false, getString(R.string.train_save_text_wait));
         updateStartButtonStyle(false);
@@ -241,21 +467,22 @@ public class TrainFragment extends Fragment {
 
         activeRecording = videoCapture.getOutput()
                 .prepareRecording(requireContext(), outputOptions)
-                // 当前只录制无声视频，如果后面要加声音，需要申请 RECORD_AUDIO 权限并 .withAudioEnabled()
                 .start(ContextCompat.getMainExecutor(requireContext()), event -> {
                     if (event instanceof VideoRecordEvent.Finalize) {
                         VideoRecordEvent.Finalize finalizeEvent = (VideoRecordEvent.Finalize) event;
                         if (!finalizeEvent.hasError()) {
                             lastVideoPath = pendingVideoPath;
-                            videoFinalizeDone = true;
-                            updateRecordStatus(getString(R.string.train_status_ready), true, getString(R.string.train_save_text_default));
+                            videoFinalizeDone = false;
+                            updateRecordStatus(getString(R.string.train_status_post_processing), false, getString(R.string.train_save_text_wait));
                             updateStartButtonStyle(false);
                             Toast.makeText(requireContext(), getString(R.string.train_toast_video_saved), Toast.LENGTH_SHORT).show();
+                            startOfflinePosePostProcess(lastVideoPath);
                             Log.d(TAG, "Video saved: " + lastVideoPath + ", size=" + videoFile.length());
                         } else {
                             Log.e(TAG, "Video finalize error: " + finalizeEvent.getError());
                             lastVideoPath = "";
                             videoFinalizeDone = false;
+                            isPostProcessing = false;
                             updateRecordStatus(getString(R.string.train_status_save_failed), false, getString(R.string.train_save_text_default));
                             btnStartRecognize.setVisibility(View.VISIBLE);
                             updateStartButtonStyle(true);
@@ -279,6 +506,14 @@ public class TrainFragment extends Fragment {
         String videoInfo = (!videoFinalizeDone || lastVideoPath.isEmpty()) ? "视频:无" : "视频:" + lastVideoPath;
         String record = time + " | " + currentMode + " | 次数:" + actionCount + " | 均分:" + avgScore + " | " + videoInfo;
 
+        String oldRecords = SPUtils.getString(requireContext(), SP_KEY_TRAIN_RECORDS, "");
+        String newRecords = record + (oldRecords.isEmpty() ? "" : "\n" + oldRecords);
+        SPUtils.putString(requireContext(), SP_KEY_TRAIN_RECORDS, newRecords);
+
+        updateMilestoneProgress(avgScore);
+    }
+
+    private void updateMilestoneProgress(int avgScore) {
         String account = SPUtils.getString(requireContext(), "account", "default");
         String recordKey = getTrainRecordsKey(account);
         String oldRecords = SPUtils.getString(requireContext(), recordKey, "");
@@ -294,11 +529,7 @@ public class TrainFragment extends Fragment {
     }
 
 
-    /**
-     * 设置所有控件的监听事件
-     */
     private void setViewListeners() {
-        // 1. 模式选择监听（射门/运球/传球切换）
         rgMode.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.rb_shoot) {
                 currentMode = getString(R.string.train_mode_shoot);
@@ -307,72 +538,41 @@ public class TrainFragment extends Fragment {
             } else if (checkedId == R.id.rb_pass) {
                 currentMode = getString(R.string.train_mode_pass);
             }
-            // 如果正在识别，实时更新当前动作
             if (isRecognizing) {
                 tvCurrentAction.setText(getString(R.string.train_current_action_format, currentMode));
             }
         });
 
-        // 2. 开始识别按钮点击
         btnStartRecognize.setOnClickListener(v -> {
+            if (isPostProcessing) {
+                Toast.makeText(requireContext(), getString(R.string.train_toast_wait_post_process), Toast.LENGTH_SHORT).show();
+                return;
+            }
             isRecognizing = true;
             pendingVideoPath = "";
             lastVideoPath = "";
             videoFinalizeDone = false;
+            actionCount = 0;
+            totalScore = 0;
+            lastRepTimestampMs = 0L;
+
             startVideoRecording();
-            // UI状态切换：隐藏开始按钮，显示识别中布局
             btnStartRecognize.setVisibility(View.GONE);
             llRecognizing.setVisibility(View.VISIBLE);
             llRecognized.setVisibility(View.GONE);
-            // 重置计数
-            actionCount = 0;
-            totalScore = 0;
-
-            // 模拟实时识别（每秒刷新一次评分/置信度）
-            recognizeRunnable = new Runnable() {
-                @Override
-                public void run() {
-                    if (isRecognizing && isAdded()) {
-                        actionCount++;
-                        // 随机生成60-100分的评分（后续替换为真实识别结果）
-                        int randomScore = (int) (60 + Math.random() * 40);
-                        totalScore += randomScore;
-                        // 随机生成0.8-1.0的置信度
-                        float randomConfidence = (float) (0.8 + Math.random() * 0.2);
-
-                        // 更新UI（必须在主线程）
-                        requireActivity().runOnUiThread(() -> {
-                            tvCurrentAction.setText(getString(R.string.train_current_action_format, currentMode));
-                            String confidenceText = String.format(Locale.getDefault(), "%.2f", randomConfidence);
-                            tvConfidence.setText(getString(R.string.train_confidence_format, confidenceText));
-                            tvScore.setText(getString(R.string.train_score_format, randomScore));
-                        });
-
-                        // 每秒执行一次
-                        handler.postDelayed(this, 1000);
-                    }
-                }
-            };
-            handler.post(recognizeRunnable);
         });
 
-        // 3. 结束识别按钮点击
         btnStopRecognize.setOnClickListener(v -> {
             isRecognizing = false;
             stopVideoRecording();
             updateRecordStatus(getString(R.string.train_status_saving), false, getString(R.string.train_save_text_wait));
-            // 停止定时任务
-            handler.removeCallbacks(recognizeRunnable);
-            // UI状态切换：隐藏识别中布局，显示识别完成布局
             llRecognizing.setVisibility(View.GONE);
             llRecognized.setVisibility(View.VISIBLE);
 
-            // 计算平均评分
             int avgScore = actionCount > 0 ? totalScore / actionCount : 0;
-            // 更新识别完成结果
             tvTotalCount.setText(getString(R.string.train_total_count_format, currentMode, actionCount));
             tvAvgScore.setText(getString(R.string.train_avg_score_format, avgScore));
-            // 根据模式显示不同的改进建议
+
             if (currentMode.equals(getString(R.string.train_mode_shoot))) {
                 tvSuggestion.setText(getString(R.string.train_suggestion_shoot));
             } else if (currentMode.equals(getString(R.string.train_mode_dribble))) {
@@ -382,21 +582,27 @@ public class TrainFragment extends Fragment {
             }
         });
 
-        // 4. 保存结果按钮点击
         btnSaveResult.setOnClickListener(v -> {
-            if (isAdded()) {
-                if (!videoFinalizeDone) {
-                    Toast.makeText(requireContext(), getString(R.string.train_toast_wait_video_finalize), Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                saveTrainRecord();
-                Toast.makeText(requireContext(), getString(R.string.train_toast_record_saved), Toast.LENGTH_SHORT).show();
-                // 重置UI状态
-                btnStartRecognize.setVisibility(View.VISIBLE);
-                llRecognized.setVisibility(View.GONE);
-                updateRecordStatus(getString(R.string.train_status_idle), false, getString(R.string.train_save_text_default));
-                updateStartButtonStyle(false);
+            if (!isAdded()) {
+                return;
             }
+            if (!videoFinalizeDone || isPostProcessing) {
+                Toast.makeText(requireContext(), getString(R.string.train_toast_wait_video_finalize), Toast.LENGTH_SHORT).show();
+                return;
+            }
+            saveTrainRecord();
+            Toast.makeText(requireContext(), getString(R.string.train_toast_record_saved), Toast.LENGTH_SHORT).show();
+
+            if (!lastVideoPath.isEmpty()) {
+                Intent intent = new Intent(requireContext(), VideoPlayerActivity.class);
+                intent.putExtra(VideoPlayerActivity.EXTRA_VIDEO_PATH, lastVideoPath);
+                startActivity(intent);
+            }
+
+            btnStartRecognize.setVisibility(View.VISIBLE);
+            llRecognized.setVisibility(View.GONE);
+            updateRecordStatus(getString(R.string.train_status_idle), false, getString(R.string.train_save_text_default));
+            updateStartButtonStyle(false);
         });
     }
 
@@ -407,12 +613,16 @@ public class TrainFragment extends Fragment {
     public void onDestroy() {
         super.onDestroy();
         stopVideoRecording();
-        // 关闭相机线程池
         if (cameraExecutor != null) {
             cameraExecutor.shutdown();
         }
-        // 停止识别定时任务
-        handler.removeCallbacks(recognizeRunnable);
+        if (postProcessExecutor != null) {
+            postProcessExecutor.shutdown();
+        }
+        if (poseLandmarker != null) {
+            poseLandmarker.close();
+            poseLandmarker = null;
+        }
     }
 
     public static TrainFragment newInstance(String presetMode) {

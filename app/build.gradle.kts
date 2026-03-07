@@ -63,10 +63,14 @@ dependencies {
     implementation("androidx.camera:camera-camera2:$cameraxVersion")
     implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
     implementation("androidx.camera:camera-view:$cameraxVersion")
+    implementation("androidx.camera:camera-video:$cameraxVersion")
 
     // TensorFlow Lite dependencies removed: AGP 9 fails manifest merge due to
     // duplicate namespace between tensorflow-lite and tensorflow-lite-api.
     // Re-add with AGP-compatible versions when ML code is introduced.
+
+    // MediaPipe Tasks Vision（仅添加这一套，避免手动引入 TensorFlow Lite 造成冲突）
+    implementation("com.google.mediapipe:tasks-vision:0.10.14")
 
     // LiveData + ViewModel（实时UI刷新）
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.7.0")
