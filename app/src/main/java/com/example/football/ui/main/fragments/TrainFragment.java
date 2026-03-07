@@ -75,7 +75,7 @@ public class TrainFragment extends Fragment {
     // 核心控件声明
     private PreviewView previewView;
     private RadioGroup rgMode;
-    private Button btnStartRecognize, btnStopRecognize, btnSaveResult;
+    private Button btnStartRecognize, btnStopRecognize, btnSaveResult, btnDiscardResult;
     private LinearLayout llRecognizing, llRecognized;
     private TextView tvCurrentAction, tvConfidence, tvScore, tvTotalCount, tvAvgScore, tvSuggestion;
     private TextView tvRecordingState;
@@ -90,6 +90,8 @@ public class TrainFragment extends Fragment {
     private String lastVideoPath = "";
     private PoseVideoProcessor poseVideoProcessor;
     private volatile boolean isPostProcessing = false;
+    private boolean saveRequestedForSession = false;
+    private int currentSessionId = 0;
 
     // MediaPipe 相关
     private PoseLandmarker poseLandmarker;
@@ -151,6 +153,7 @@ public class TrainFragment extends Fragment {
         btnStartRecognize = view.findViewById(R.id.btn_start_recognize);
         btnStopRecognize = view.findViewById(R.id.btn_stop_recognize);
         btnSaveResult = view.findViewById(R.id.btn_save_result);
+        btnDiscardResult = view.findViewById(R.id.btn_not_save_result);
         llRecognizing = view.findViewById(R.id.ll_recognizing);
         llRecognized = view.findViewById(R.id.ll_recognized);
         tvCurrentAction = view.findViewById(R.id.tv_current_action);
@@ -197,10 +200,13 @@ public class TrainFragment extends Fragment {
         }
     }
 
-    private void updateRecordStatus(String text, boolean canSave, String saveButtonText) {
+    private void updateRecordStatus(String text, boolean canOperate, String saveButtonText) {
         tvRecordingState.setText(text);
-        btnSaveResult.setEnabled(canSave);
+        btnSaveResult.setEnabled(canOperate);
         btnSaveResult.setText(saveButtonText);
+        if (btnDiscardResult != null) {
+            btnDiscardResult.setEnabled(canOperate);
+        }
     }
 
     private void updateStartButtonStyle(boolean isRetry) {
@@ -375,8 +381,8 @@ public class TrainFragment extends Fragment {
         return Math.max(0, Math.min(100, score));
     }
 
-    private void startOfflinePosePostProcess(@NonNull String rawVideoPath) {
-        if (isPostProcessing) {
+    private void startOfflinePosePostProcess(@NonNull String rawVideoPath, int sessionId) {
+        if (isPostProcessing || sessionId != currentSessionId) {
             return;
         }
         final android.content.Context appContext = requireContext().getApplicationContext();
@@ -388,7 +394,7 @@ public class TrainFragment extends Fragment {
         if (parent == null) {
             isPostProcessing = false;
             videoFinalizeDone = true;
-            updateRecordStatus(getString(R.string.train_status_ready), true, getString(R.string.train_save_text_default));
+            finishSaveFlow();
             return;
         }
         String outputName = "pose_" + rawFile.getName();
@@ -401,7 +407,7 @@ public class TrainFragment extends Fragment {
                 new PoseVideoProcessor.Callback() {
                     @Override
                     public void onProgress(int progress) {
-                        if (!isAdded()) {
+                        if (sessionId != currentSessionId || !isAdded()) {
                             return;
                         }
                         requireActivity().runOnUiThread(() -> tvRecordingState.setText(
@@ -411,6 +417,10 @@ public class TrainFragment extends Fragment {
 
                     @Override
                     public void onCompleted(@NonNull String outputPath) {
+                        if (sessionId != currentSessionId) {
+                            safeDeleteFile(outputPath);
+                            return;
+                        }
                         isPostProcessing = false;
                         videoFinalizeDone = true;
                         lastVideoPath = outputPath;
@@ -418,21 +428,24 @@ public class TrainFragment extends Fragment {
                             return;
                         }
                         requireActivity().runOnUiThread(() -> {
-                            updateRecordStatus(getString(R.string.train_status_ready), true, getString(R.string.train_save_text_default));
                             Toast.makeText(requireContext(), getString(R.string.train_toast_pose_video_ready), Toast.LENGTH_SHORT).show();
+                            finishSaveFlow();
                         });
                     }
 
                     @Override
                     public void onFailed(@NonNull Exception error) {
+                        if (sessionId != currentSessionId) {
+                            return;
+                        }
                         isPostProcessing = false;
                         videoFinalizeDone = true;
                         if (!isAdded()) {
                             return;
                         }
                         requireActivity().runOnUiThread(() -> {
-                            updateRecordStatus(getString(R.string.train_status_post_process_failed), true, getString(R.string.train_save_text_default));
                             Toast.makeText(requireContext(), getString(R.string.train_toast_pose_video_failed), Toast.LENGTH_SHORT).show();
+                            finishSaveFlow();
                         });
                         Log.e(TAG, "offline pose process failed", error);
                     }
@@ -440,7 +453,7 @@ public class TrainFragment extends Fragment {
         ));
     }
 
-    private void startVideoRecording() {
+    private void startVideoRecording(int sessionId) {
         if (videoCapture == null || !isAdded()) {
             Toast.makeText(requireContext(), getString(R.string.train_toast_recorder_not_ready), Toast.LENGTH_SHORT).show();
             return;
@@ -460,7 +473,8 @@ public class TrainFragment extends Fragment {
 
         String fileName = "train_" + System.currentTimeMillis() + ".mp4";
         File videoFile = new File(videoDir, fileName);
-        pendingVideoPath = videoFile.getAbsolutePath();
+        final String sessionRawPath = videoFile.getAbsolutePath();
+        pendingVideoPath = sessionRawPath;
         lastVideoPath = "";
         videoFinalizeDone = false;
         isPostProcessing = false;
@@ -477,21 +491,30 @@ public class TrainFragment extends Fragment {
                 .start(ContextCompat.getMainExecutor(requireContext()), event -> {
                     if (event instanceof VideoRecordEvent.Finalize) {
                         VideoRecordEvent.Finalize finalizeEvent = (VideoRecordEvent.Finalize) event;
+                        if (sessionId != currentSessionId) {
+                            safeDeleteFile(sessionRawPath);
+                            return;
+                        }
                         if (!finalizeEvent.hasError()) {
-                            lastVideoPath = pendingVideoPath;
-                            videoFinalizeDone = false;
-                            updateRecordStatus(getString(R.string.train_status_post_processing), false, getString(R.string.train_save_text_wait));
+                            lastVideoPath = sessionRawPath;
+                            videoFinalizeDone = true;
+                            if (saveRequestedForSession) {
+                                startOfflinePosePostProcess(lastVideoPath, sessionId);
+                            } else {
+                                updateRecordStatus(getString(R.string.train_status_wait_decision), true, getString(R.string.train_save_text_default));
+                            }
                             updateStartButtonStyle(false);
                             Toast.makeText(requireContext(), getString(R.string.train_toast_video_saved), Toast.LENGTH_SHORT).show();
-                            startOfflinePosePostProcess(lastVideoPath);
                             Log.d(TAG, "Video saved: " + lastVideoPath + ", size=" + videoFile.length());
                         } else {
                             Log.e(TAG, "Video finalize error: " + finalizeEvent.getError());
                             lastVideoPath = "";
                             videoFinalizeDone = false;
                             isPostProcessing = false;
+                            saveRequestedForSession = false;
                             updateRecordStatus(getString(R.string.train_status_save_failed), false, getString(R.string.train_save_text_default));
                             btnStartRecognize.setVisibility(View.VISIBLE);
+                            llRecognized.setVisibility(View.GONE);
                             updateStartButtonStyle(true);
                             Toast.makeText(requireContext(), getString(R.string.train_toast_video_save_failed), Toast.LENGTH_SHORT).show();
                         }
@@ -555,6 +578,8 @@ public class TrainFragment extends Fragment {
                 Toast.makeText(requireContext(), getString(R.string.train_toast_wait_post_process), Toast.LENGTH_SHORT).show();
                 return;
             }
+            currentSessionId++;
+            saveRequestedForSession = false;
             isRecognizing = true;
             pendingVideoPath = "";
             lastVideoPath = "";
@@ -563,7 +588,7 @@ public class TrainFragment extends Fragment {
             totalScore = 0;
             lastRepTimestampMs = 0L;
 
-            startVideoRecording();
+            startVideoRecording(currentSessionId);
             btnStartRecognize.setVisibility(View.GONE);
             llRecognizing.setVisibility(View.VISIBLE);
             llRecognized.setVisibility(View.GONE);
@@ -572,7 +597,7 @@ public class TrainFragment extends Fragment {
         btnStopRecognize.setOnClickListener(v -> {
             isRecognizing = false;
             stopVideoRecording();
-            updateRecordStatus(getString(R.string.train_status_saving), false, getString(R.string.train_save_text_wait));
+            updateRecordStatus(getString(R.string.train_status_wait_finalize), true, getString(R.string.train_save_text_default));
             llRecognizing.setVisibility(View.GONE);
             llRecognized.setVisibility(View.VISIBLE);
 
@@ -593,24 +618,87 @@ public class TrainFragment extends Fragment {
             if (!isAdded()) {
                 return;
             }
-            if (!videoFinalizeDone || isPostProcessing) {
-                Toast.makeText(requireContext(), getString(R.string.train_toast_wait_video_finalize), Toast.LENGTH_SHORT).show();
+            if (isPostProcessing) {
+                Toast.makeText(requireContext(), getString(R.string.train_toast_wait_post_process), Toast.LENGTH_SHORT).show();
                 return;
             }
-            saveTrainRecord();
-            Toast.makeText(requireContext(), getString(R.string.train_toast_record_saved), Toast.LENGTH_SHORT).show();
-
-            if (!lastVideoPath.isEmpty()) {
-                Intent intent = new Intent(requireContext(), VideoPlayerActivity.class);
-                intent.putExtra(VideoPlayerActivity.EXTRA_VIDEO_PATH, lastVideoPath);
-                startActivity(intent);
+            saveRequestedForSession = true;
+            if (!videoFinalizeDone) {
+                updateRecordStatus(getString(R.string.train_status_saving), false, getString(R.string.train_save_text_wait));
+                return;
             }
-
-            btnStartRecognize.setVisibility(View.VISIBLE);
-            llRecognized.setVisibility(View.GONE);
-            updateRecordStatus(getString(R.string.train_status_idle), false, getString(R.string.train_save_text_default));
-            updateStartButtonStyle(false);
+            startOfflinePosePostProcess(lastVideoPath, currentSessionId);
         });
+
+        btnDiscardResult.setOnClickListener(v -> discardCurrentSession());
+    }
+
+    private void finishSaveFlow() {
+        if (!isAdded()) {
+            return;
+        }
+        saveTrainRecord();
+        Toast.makeText(requireContext(), getString(R.string.train_toast_record_saved), Toast.LENGTH_LONG).show();
+
+        if (!lastVideoPath.isEmpty()) {
+            Intent intent = new Intent(requireContext(), VideoPlayerActivity.class);
+            intent.putExtra(VideoPlayerActivity.EXTRA_VIDEO_PATH, lastVideoPath);
+            startActivity(intent);
+        }
+
+        resetToInitialState();
+    }
+
+    private void discardCurrentSession() {
+        int discardedSession = currentSessionId;
+        currentSessionId++;
+        saveRequestedForSession = false;
+        isPostProcessing = false;
+        videoFinalizeDone = false;
+
+        String rawPath = pendingVideoPath;
+        String processedPath = lastVideoPath;
+
+        stopVideoRecording();
+        safeDeleteFile(rawPath);
+        if (!processedPath.equals(rawPath)) {
+            safeDeleteFile(processedPath);
+        }
+
+        if (discardedSession > 0 && isAdded()) {
+            Toast.makeText(requireContext(), getString(R.string.train_toast_record_discarded), Toast.LENGTH_SHORT).show();
+        }
+        resetToInitialState();
+    }
+
+    private void resetToInitialState() {
+        isRecognizing = false;
+        saveRequestedForSession = false;
+        pendingVideoPath = "";
+        lastVideoPath = "";
+        videoFinalizeDone = false;
+        actionCount = 0;
+        totalScore = 0;
+        lastRepTimestampMs = 0L;
+
+        if (getView() == null) {
+            return;
+        }
+        btnStartRecognize.setVisibility(View.VISIBLE);
+        llRecognizing.setVisibility(View.GONE);
+        llRecognized.setVisibility(View.GONE);
+        updateRecordStatus(getString(R.string.train_status_idle), false, getString(R.string.train_save_text_default));
+        updateStartButtonStyle(false);
+    }
+
+    private void safeDeleteFile(@Nullable String path) {
+        if (path == null || path.trim().isEmpty()) {
+            return;
+        }
+        File file = new File(path);
+        if (file.exists() && !file.delete()) {
+            Log.w(TAG, "Failed to delete file: " + path);
+        }
     }
 
     /**
@@ -619,6 +707,7 @@ public class TrainFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        currentSessionId++;
         stopVideoRecording();
         if (cameraExecutor != null) {
             cameraExecutor.shutdown();

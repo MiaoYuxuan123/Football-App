@@ -8,6 +8,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.football.R;
@@ -24,6 +25,7 @@ public class TrainRecordsActivity extends AppCompatActivity {
     private LinearLayout layoutRecordsContainer;
     private TextView tvEmptyRecords;
     private String currentAccount = "default";
+    private final java.util.ArrayList<String> records = new java.util.ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,15 +43,26 @@ public class TrainRecordsActivity extends AppCompatActivity {
         tvEmptyRecords = findViewById(R.id.tv_empty_records);
         layoutRecordsContainer = findViewById(R.id.layout_records_container);
 
-        findViewById(R.id.btn_clear_records).setOnClickListener(v -> {
-            SPUtils.putString(this, getTrainRecordsKey(currentAccount), "");
-            SPUtils.putString(this, SP_KEY_TRAIN_RECORDS, ""); // 兼容旧key
-            MilestoneDbHelper.getInstance(this).resetTrainingProgress(currentAccount);
-            loadRecords();
-            Toast.makeText(this, "训练记录已清空", Toast.LENGTH_SHORT).show();
-        });
+        findViewById(R.id.btn_clear_records).setOnClickListener(v -> showClearRecordsConfirmDialog());
 
         loadRecords();
+    }
+
+    private void showClearRecordsConfirmDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle(getString(R.string.train_records_clear_confirm_title))
+                .setMessage(getString(R.string.train_records_clear_confirm_message))
+                .setPositiveButton(getString(R.string.common_yes), (dialog, which) -> clearAllRecords())
+                .setNegativeButton(getString(R.string.common_no), (dialog, which) -> dialog.dismiss())
+                .show();
+    }
+
+    private void clearAllRecords() {
+        SPUtils.putString(this, getTrainRecordsKey(currentAccount), "");
+        SPUtils.putString(this, SP_KEY_TRAIN_RECORDS, ""); // 兼容旧key
+        MilestoneDbHelper.getInstance(this).resetTrainingProgress(currentAccount);
+        loadRecords();
+        Toast.makeText(this, getString(R.string.train_records_cleared), Toast.LENGTH_SHORT).show();
     }
 
     private void loadRecords() {
@@ -61,6 +74,7 @@ public class TrainRecordsActivity extends AppCompatActivity {
             }
         }
 
+        records.clear();
         layoutRecordsContainer.removeAllViews();
         if (TextUtils.isEmpty(raw)) {
             tvEmptyRecords.setVisibility(View.VISIBLE);
@@ -68,41 +82,59 @@ public class TrainRecordsActivity extends AppCompatActivity {
         }
 
         String[] lines = raw.split("\\n");
-        int added = 0;
         for (String line : lines) {
             String trimmed = line == null ? "" : line.trim();
-            if (trimmed.isEmpty()) {
-                continue;
+            if (!trimmed.isEmpty()) {
+                records.add(trimmed);
             }
-            TextView item = buildRecordItem(trimmed);
-            layoutRecordsContainer.addView(item);
-            added++;
         }
-        tvEmptyRecords.setVisibility(added == 0 ? View.VISIBLE : View.GONE);
+
+        for (int i = 0; i < records.size(); i++) {
+            View item = buildRecordItem(records.get(i), i);
+            layoutRecordsContainer.addView(item);
+        }
+        tvEmptyRecords.setVisibility(records.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
-    private TextView buildRecordItem(String record) {
-        TextView tv = new TextView(this);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+    private View buildRecordItem(String record, int index) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        lp.bottomMargin = dp(10);
-        tv.setLayoutParams(lp);
-        tv.setPadding(dp(12), dp(12), dp(12), dp(12));
+        rowLp.bottomMargin = dp(10);
+        row.setLayoutParams(rowLp);
+        row.setPadding(dp(12), dp(12), dp(12), dp(12));
+        row.setBackgroundColor(0xFFF7F9FF);
+
+        TextView tv = new TextView(this);
+        LinearLayout.LayoutParams tvLp = new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        tv.setLayoutParams(tvLp);
         tv.setText(record);
         tv.setTextSize(14f);
         tv.setTextColor(0xFF1F2A44);
-        tv.setBackgroundColor(0xFFF7F9FF);
+        tv.setPadding(0, 0, dp(8), 0);
+
+        TextView btnDelete = new TextView(this);
+        LinearLayout.LayoutParams delLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        btnDelete.setLayoutParams(delLp);
+        btnDelete.setText(getString(R.string.train_record_delete));
+        btnDelete.setTextSize(13f);
+        btnDelete.setTextColor(0xFFD32F2F);
+        btnDelete.setPadding(dp(8), dp(4), dp(8), dp(4));
 
         tv.setOnClickListener(v -> {
             String videoPath = parseVideoPath(record);
             if (TextUtils.isEmpty(videoPath) || "无".equals(videoPath)) {
-                Toast.makeText(this, "该记录没有可播放视频", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.train_record_no_video), Toast.LENGTH_SHORT).show();
                 return;
             }
             File videoFile = new File(videoPath);
             if (!videoFile.exists()) {
-                Toast.makeText(this, "视频文件不存在或已删除", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.train_record_video_missing), Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -110,7 +142,35 @@ public class TrainRecordsActivity extends AppCompatActivity {
             intent.putExtra(VideoPlayerActivity.EXTRA_VIDEO_PATH, videoPath);
             startActivity(intent);
         });
-        return tv;
+
+        btnDelete.setOnClickListener(v -> deleteRecordAt(index));
+
+        row.addView(tv);
+        row.addView(btnDelete);
+        return row;
+    }
+
+    private void deleteRecordAt(int index) {
+        if (index < 0 || index >= records.size()) {
+            return;
+        }
+        records.remove(index);
+        persistRecords();
+        loadRecords();
+        Toast.makeText(this, getString(R.string.train_record_deleted), Toast.LENGTH_SHORT).show();
+    }
+
+    private void persistRecords() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < records.size(); i++) {
+            if (i > 0) {
+                sb.append('\n');
+            }
+            sb.append(records.get(i));
+        }
+        String updated = sb.toString();
+        SPUtils.putString(this, getTrainRecordsKey(currentAccount), updated);
+        SPUtils.putString(this, SP_KEY_TRAIN_RECORDS, updated); // 兼容旧key
     }
 
     private String parseVideoPath(String record) {
@@ -129,4 +189,3 @@ public class TrainRecordsActivity extends AppCompatActivity {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 }
-

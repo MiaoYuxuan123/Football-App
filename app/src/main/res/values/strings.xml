@@ -34,14 +34,16 @@
     <string name="train_mode_dribble">运球</string>
     <string name="train_mode_pass">传球</string>
 
-    <string name="train_save_text_default">保存训练结果</string>
+    <string name="train_save_text_default">保存</string>
     <string name="train_save_text_wait">视频保存中…</string>
     <string name="train_start_text_default">开始识别</string>
     <string name="train_start_text_retry">重新录制</string>
 
     <string name="train_status_idle">视频状态：待开始录制</string>
     <string name="train_status_recording">视频状态：录制中</string>
-    <string name="train_status_saving">视频状态：正在保存，请稍候</string>
+    <string name="train_status_saving">视频状态：录制结束，正在封装视频</string>
+    <string name="train_status_wait_finalize">视频状态：录制结束，正在封装视频</string>
+    <string name="train_status_wait_decision">视频状态：已完成录制，请选择保存或不保存</string>
     <string name="train_status_ready">视频状态：已保存，可回放</string>
     <string name="train_status_save_failed">视频状态：保存失败，请重录</string>
     <string name="train_status_post_processing">视频状态：正在生成关键点视频</string>
@@ -56,11 +58,12 @@
     <string name="train_toast_video_saved">视频已保存，可点击保存训练结果</string>
     <string name="train_toast_video_save_failed">视频保存失败，请点击重新录制</string>
     <string name="train_toast_wait_video_finalize">请先结束识别并等待视频保存完成</string>
-    <string name="train_toast_record_saved">训练结果已保存到本地</string>
+    <string name="train_toast_record_saved">训练结果已保存到我的里的训练记录</string>
 
     <string name="train_toast_pose_video_ready">关键点视频生成完成，可直接播放</string>
     <string name="train_toast_pose_video_failed">关键点视频生成失败，已回退原视频</string>
     <string name="train_toast_wait_post_process">关键点视频还在处理中，请稍候</string>
+    <string name="train_toast_record_discarded">本次训练已不保存</string>
 
     <string name="train_suggestion_shoot">- 支撑脚不稳\n- 射门角度偏低</string>
     <string name="train_suggestion_dribble">- 运球频率过快\n- 重心偏高</string>
@@ -128,4 +131,14 @@
     <string name="home_star_upload_failed">图片导入失败，请重试</string>
     <string name="home_star_local_subtitle">本地照片轮播</string>
     <string name="home_star_asset_subtitle">项目内置照片轮播</string>
+
+    <string name="train_record_delete">删除</string>
+    <string name="train_record_deleted">该条训练记录已删除</string>
+    <string name="train_record_no_video">该记录没有可播放视频</string>
+    <string name="train_record_video_missing">视频文件不存在或已删除</string>
+    <string name="train_records_cleared">训练记录已清空</string>
+    <string name="train_records_clear_confirm_title">提示</string>
+    <string name="train_records_clear_confirm_message">将会删除所有训练记录，包括您的累计训练次数和里程碑中的等级，是否继续</string>
+    <string name="common_yes">是</string>
+    <string name="common_no">否</string>
 </resources>
