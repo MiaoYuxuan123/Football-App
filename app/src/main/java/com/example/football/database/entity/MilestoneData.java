@@ -16,6 +16,10 @@ public class MilestoneData {
     public int experience;
     public int experienceToNext;
     public int xpPerTraining;
+    public int trainCount;
+    public int shootCount;
+    public int dribbleCount;
+    public int passCount;
     public String badgesJson;
     public String technicalScoresJson;
     public String radarScoresJson;
@@ -29,6 +33,10 @@ public class MilestoneData {
         d.experience = 30;
         d.experienceToNext = 100;
         d.xpPerTraining = 10;
+        d.trainCount = 0;
+        d.shootCount = 0;
+        d.dribbleCount = 0;
+        d.passCount = 0;
         d.badgesJson = defaultBadgesJson();
         d.technicalScoresJson = "[68,72,74,76,79]";
         d.radarScoresJson = "[72,70,74,66,71,69]";

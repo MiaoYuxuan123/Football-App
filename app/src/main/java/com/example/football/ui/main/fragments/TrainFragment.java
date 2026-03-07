@@ -29,19 +29,13 @@ import androidx.fragment.app.Fragment;
 
 import com.example.football.R;
 import com.example.football.database.MilestoneDbHelper;
-import com.example.football.database.entity.MilestoneData;
 import com.example.football.utils.SPUtils;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
 import java.io.File;
-import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -82,6 +76,10 @@ public class TrainFragment extends Fragment {
 
     private static final String TAG = "TrainFragment";
     private static final String SP_KEY_TRAIN_RECORDS = "train_records";
+    private static final String ARG_PRESET_MODE = "arg_preset_mode";
+    public static final String MODE_KEY_SHOOT = "shoot";
+    public static final String MODE_KEY_DRIBBLE = "dribble";
+    public static final String MODE_KEY_PASS = "pass";
 
     private String pendingVideoPath = "";
     private boolean videoFinalizeDone = false;
@@ -143,6 +141,23 @@ public class TrainFragment extends Fragment {
         tvAvgScore = view.findViewById(R.id.tv_avg_score);
         tvSuggestion = view.findViewById(R.id.tv_suggestion);
         tvRecordingState = view.findViewById(R.id.tv_recording_state);
+
+        String presetMode = getArguments() != null ? getArguments().getString(ARG_PRESET_MODE, "") : "";
+        if (MODE_KEY_DRIBBLE.equals(presetMode)) {
+            rgMode.check(R.id.rb_dribble);
+        } else if (MODE_KEY_PASS.equals(presetMode)) {
+            rgMode.check(R.id.rb_pass);
+        } else if (MODE_KEY_SHOOT.equals(presetMode)) {
+            rgMode.check(R.id.rb_shoot);
+        }
+
+        if (rgMode.getCheckedRadioButtonId() == R.id.rb_dribble) {
+            currentMode = getString(R.string.train_mode_dribble);
+        } else if (rgMode.getCheckedRadioButtonId() == R.id.rb_pass) {
+            currentMode = getString(R.string.train_mode_pass);
+        } else {
+            currentMode = getString(R.string.train_mode_shoot);
+        }
 
         // 初始化相机线程池
         cameraExecutor = Executors.newSingleThreadExecutor();
@@ -264,103 +279,20 @@ public class TrainFragment extends Fragment {
         String videoInfo = (!videoFinalizeDone || lastVideoPath.isEmpty()) ? "视频:无" : "视频:" + lastVideoPath;
         String record = time + " | " + currentMode + " | 次数:" + actionCount + " | 均分:" + avgScore + " | " + videoInfo;
 
-        String oldRecords = SPUtils.getString(requireContext(), SP_KEY_TRAIN_RECORDS, "");
-        String newRecords = record + (oldRecords.isEmpty() ? "" : "\n" + oldRecords);
-        SPUtils.putString(requireContext(), SP_KEY_TRAIN_RECORDS, newRecords);
-
-        // Keep milestone page in sync when a training result is persisted.
-        updateMilestoneProgress(avgScore);
-    }
-
-    private void updateMilestoneProgress(int avgScore) {
         String account = SPUtils.getString(requireContext(), "account", "default");
-        MilestoneDbHelper db = MilestoneDbHelper.getInstance(requireContext());
-        MilestoneData milestone = db.getOrCreate(account);
+        String recordKey = getTrainRecordsKey(account);
+        String oldRecords = SPUtils.getString(requireContext(), recordKey, "");
+        String newRecords = record + (oldRecords.isEmpty() ? "" : "\n" + oldRecords);
+        SPUtils.putString(requireContext(), recordKey, newRecords);
 
-        int xpGain = Math.max(5, avgScore / 3);
-        milestone.experience += xpGain;
-
-        while (milestone.experience >= milestone.experienceToNext) {
-            milestone.experience -= milestone.experienceToNext;
-            milestone.level += 1;
-            milestone.experienceToNext += 50;
-            milestone.xpPerTraining = Math.min(80, milestone.xpPerTraining + 2);
-            milestone.technicalTitle = resolveTitleByLevel(milestone.level);
-        }
-
-        List<Float> trend = parseFloatList(milestone.technicalScoresJson);
-        if (trend == null) {
-            trend = new ArrayList<>();
-        }
-        trend.add((float) avgScore);
-        if (trend.size() > 12) {
-            trend = new ArrayList<>(trend.subList(trend.size() - 12, trend.size()));
-        }
-        milestone.technicalScoresJson = new Gson().toJson(trend);
-
-        float base = avg(trend);
-        float[] radar = new float[]{
-                clamp(base + modeOffset(getString(R.string.train_mode_shoot)), 50f, 99f),
-                clamp(base + modeOffset(getString(R.string.train_mode_pass)), 50f, 99f),
-                clamp(base + modeOffset(getString(R.string.train_mode_dribble)), 50f, 99f),
-                clamp(base - 6f, 45f, 95f),
-                clamp(base - 2f, 45f, 98f),
-                clamp(base, 45f, 99f)
-        };
-        milestone.radarScoresJson = new Gson().toJson(radarToList(radar));
-
-        db.update(milestone);
+        MilestoneDbHelper.getInstance(requireContext())
+                .recordTrainingResult(account, currentMode, avgScore, actionCount);
     }
 
-    private String resolveTitleByLevel(int level) {
-        if (level >= 10) return getString(R.string.milestone_title_elite);
-        if (level >= 7) return getString(R.string.milestone_title_advanced);
-        if (level >= 4) return getString(R.string.milestone_title_intermediate);
-        return getString(R.string.milestone_title_beginner);
+    private String getTrainRecordsKey(String account) {
+        return SP_KEY_TRAIN_RECORDS + "_" + account;
     }
 
-    private float modeOffset(String mode) {
-        if (mode.equals(currentMode)) {
-            return 4f;
-        }
-        return 0f;
-    }
-
-    private List<Float> parseFloatList(String json) {
-        if (json == null || json.trim().isEmpty()) {
-            return null;
-        }
-        try {
-            Type type = new TypeToken<List<Float>>() { }.getType();
-            List<Float> list = new Gson().fromJson(json, type);
-            return list == null ? null : new ArrayList<>(list);
-        } catch (Exception ignored) {
-            return null;
-        }
-    }
-
-    private float avg(List<Float> values) {
-        if (values == null || values.isEmpty()) {
-            return 75f;
-        }
-        float sum = 0f;
-        for (Float v : values) {
-            sum += (v == null ? 0f : v);
-        }
-        return sum / values.size();
-    }
-
-    private List<Float> radarToList(float[] values) {
-        List<Float> list = new ArrayList<>();
-        for (float value : values) {
-            list.add(value);
-        }
-        return list;
-    }
-
-    private float clamp(float value, float min, float max) {
-        return Math.max(min, Math.min(max, value));
-    }
 
     /**
      * 设置所有控件的监听事件
@@ -481,5 +413,13 @@ public class TrainFragment extends Fragment {
         }
         // 停止识别定时任务
         handler.removeCallbacks(recognizeRunnable);
+    }
+
+    public static TrainFragment newInstance(String presetMode) {
+        TrainFragment fragment = new TrainFragment();
+        Bundle args = new Bundle();
+        args.putString(ARG_PRESET_MODE, presetMode);
+        fragment.setArguments(args);
+        return fragment;
     }
 }

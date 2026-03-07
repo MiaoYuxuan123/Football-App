@@ -86,6 +86,15 @@
                 android:text="@string/milestone_training_info_preview"
                 android:textColor="#008000"
                 android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tvTrainCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/milestone_train_count_preview"
+                android:textColor="#666666"
+                android:textSize="13sp" />
         </LinearLayout>
 
         <LinearLayout

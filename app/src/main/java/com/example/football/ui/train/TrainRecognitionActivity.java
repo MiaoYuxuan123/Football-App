@@ -22,6 +22,7 @@ import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 
 import com.example.football.R;
+import com.example.football.database.MilestoneDbHelper;
 import com.example.football.utils.SPUtils;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -142,9 +143,18 @@ public class TrainRecognitionActivity extends AppCompatActivity {
                 .format(new Date());
         String record = time + " | " + currentMode + " | 次数:" + actionCount + " | 均分:" + avgScore;
 
-        String oldRecords = SPUtils.getString(this, SP_KEY_TRAIN_RECORDS, "");
+        String account = SPUtils.getString(this, "account", "default");
+        String recordKey = getTrainRecordsKey(account);
+        String oldRecords = SPUtils.getString(this, recordKey, "");
         String newRecords = record + (oldRecords.isEmpty() ? "" : "\n" + oldRecords);
-        SPUtils.putString(this, SP_KEY_TRAIN_RECORDS, newRecords);
+        SPUtils.putString(this, recordKey, newRecords);
+
+        MilestoneDbHelper.getInstance(this)
+                .recordTrainingResult(account, currentMode, avgScore, actionCount);
+    }
+
+    private String getTrainRecordsKey(String account) {
+        return SP_KEY_TRAIN_RECORDS + "_" + account;
     }
 
     /**

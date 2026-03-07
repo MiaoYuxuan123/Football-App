@@ -2,23 +2,33 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
+    android:background="@drawable/bg_home_hero"
     android:gravity="center"
-    android:background="#000000">
+    android:orientation="vertical"
+    android:padding="24dp">
 
     <!-- 标题 -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="智能足球训练系统"
-        android:textColor="#008000"
+        android:textColor="#FFFFFF"
         android:textSize="30sp"
-        android:layout_marginBottom="40dp"/>
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="让每次训练更科学、更有趣"
+        android:textColor="#EAF2FF"
+        android:textSize="14sp" />
 
     <!-- 加载动画 -->
     <ProgressBar
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:indeterminateTint="#008000"/>
+        android:layout_marginTop="28dp"
+        android:indeterminateTint="#FFFFFF" />
 
 </LinearLayout>

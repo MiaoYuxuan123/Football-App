@@ -1,62 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="20dp"
+    android:background="@color/md_background"
     android:gravity="center"
-    android:background="#FFFFFF">
+    android:orientation="vertical"
+    android:padding="20dp">
 
-    <!-- 登录标题 -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="足球训练系统"
+        android:textColor="@color/md_primary"
         android:textSize="30sp"
-        android:textColor="#008000"
-        android:layout_marginBottom="50dp"/>
+        android:textStyle="bold" />
 
-    <!-- 账号输入框 -->
-    <EditText
-        android:id="@+id/et_account"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="请输入手机号/账号"
-        android:layout_marginBottom="15dp"
-        android:padding="12dp"
-        android:background="#F5F5F5"
-        android:outlineProvider="none"/>
+        android:layout_marginTop="24dp"
+        android:background="@drawable/bg_auth_card"
+        android:orientation="vertical"
+        android:padding="18dp">
 
-    <!-- 密码输入框 -->
-    <EditText
-        android:id="@+id/et_password"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="请输入密码"
-        android:inputType="textPassword"
-        android:layout_marginBottom="30dp"
-        android:padding="12dp"
-        android:background="#F5F5F5"
-        android:outlineProvider="none"/>
+        <EditText
+            android:id="@+id/et_account"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_input_material"
+            android:hint="请输入手机号/账号"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="@color/md_textPrimary"
+            android:textColorHint="@color/md_textSecondary" />
 
-    <!-- 登录按钮 -->
-    <Button
-        android:id="@+id/btn_login"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="登录"
-        android:background="#008000"
-        android:textColor="#FFFFFF"
-        android:textSize="18sp"
-        android:padding="10dp"/>
+        <EditText
+            android:id="@+id/et_password"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_input_material"
+            android:hint="请输入密码"
+            android:inputType="textPassword"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="@color/md_textPrimary"
+            android:textColorHint="@color/md_textSecondary" />
 
-    <!-- 注册入口 -->
-    <TextView
-        android:id="@+id/tv_go_register"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="没有账号？去注册"
-        android:textColor="#008000"
-        android:layout_marginTop="20dp"/>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_login"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="18dp"
+            android:text="登录"
+            android:textAllCaps="false"
+            android:textStyle="bold"
+            app:backgroundTint="@color/md_primary"
+            app:cornerRadius="14dp" />
+
+        <TextView
+            android:id="@+id/tv_go_register"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="14dp"
+            android:text="没有账号？去注册"
+            android:textColor="@color/md_primary"
+            android:textSize="13sp" />
+    </LinearLayout>
 
 </LinearLayout>
