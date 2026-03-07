@@ -88,6 +88,7 @@ public class PoseVideoProcessor {
             MediaFormat inputVideoFormat = videoExtractor.getTrackFormat(videoTrackIndex);
             int width = inputVideoFormat.getInteger(MediaFormat.KEY_WIDTH);
             int height = inputVideoFormat.getInteger(MediaFormat.KEY_HEIGHT);
+            FrameBuffers frameBuffers = new FrameBuffers(width, height);
 
             imageReader = ImageReader.newInstance(width, height, android.graphics.ImageFormat.YUV_420_888, 3);
 
@@ -173,7 +174,7 @@ public class PoseVideoProcessor {
                         if (shouldRender) {
                             Image image = acquireImage(imageReader);
                             if (image != null) {
-                                Bitmap frameBitmap = yuv420ToBitmap(image);
+                                Bitmap frameBitmap = yuv420ToBitmap(image, frameBuffers);
                                 image.close();
 
                                 long timestampMs = Math.max(0, decoderInfo.presentationTimeUs / 1000);
@@ -183,7 +184,7 @@ public class PoseVideoProcessor {
                                 );
                                 frameDrawer.draw(frameBitmap, poseResult, false);
 
-                                byte[] yuv = bitmapToNV12(frameBitmap);
+                                byte[] yuv = bitmapToNV12(frameBitmap, frameBuffers);
                                 queueEncoderFrame(encoder, yuv, decoderInfo.presentationTimeUs, false);
                                 lastPtsUs = decoderInfo.presentationTimeUs;
 
@@ -446,7 +447,7 @@ public class PoseVideoProcessor {
     }
 
     @NonNull
-    private Bitmap yuv420ToBitmap(@NonNull Image image) {
+    private Bitmap yuv420ToBitmap(@NonNull Image image, @NonNull FrameBuffers frameBuffers) {
         int width = image.getWidth();
         int height = image.getHeight();
 
@@ -462,7 +463,7 @@ public class PoseVideoProcessor {
         int vRowStride = planes[2].getRowStride();
         int vPixelStride = planes[2].getPixelStride();
 
-        int[] out = new int[width * height];
+        int[] out = frameBuffers.argbPixels;
 
         for (int y = 0; y < height; y++) {
             int yBase = y * yRowStride;
@@ -484,34 +485,27 @@ public class PoseVideoProcessor {
             }
         }
 
-        Bitmap bitmap = Bitmap.createBitmap(out, width, height, Bitmap.Config.ARGB_8888);
-        if (bitmap.isMutable()) {
-            return bitmap;
-        }
-        Bitmap mutable = bitmap.copy(Bitmap.Config.ARGB_8888, true);
-        if (mutable == null) {
-            throw new IllegalStateException("Failed to create mutable bitmap for pose overlay");
-        }
-        bitmap.recycle();
-        return mutable;
+        frameBuffers.frameBitmap.setPixels(out, 0, width, 0, 0, width, height);
+        return frameBuffers.frameBitmap;
     }
 
     @NonNull
-    private byte[] bitmapToNV12(@NonNull Bitmap bitmap) {
+    private byte[] bitmapToNV12(@NonNull Bitmap bitmap, @NonNull FrameBuffers frameBuffers) {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
         int frameSize = width * height;
-        byte[] out = new byte[frameSize + frameSize / 2];
+        byte[] out = frameBuffers.nv12Data;
 
-        int[] pixels = new int[frameSize];
+        int[] pixels = frameBuffers.reusedPixels;
         bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
 
         int yIndex = 0;
         int uvIndex = frameSize;
 
         for (int j = 0; j < height; j++) {
+            int rowBase = j * width;
             for (int i = 0; i < width; i++) {
-                int c = pixels[j * width + i];
+                int c = pixels[rowBase + i];
                 int r = (c >> 16) & 0xFF;
                 int g = (c >> 8) & 0xFF;
                 int b = c & 0xFF;
@@ -522,7 +516,7 @@ public class PoseVideoProcessor {
 
                 out[yIndex++] = (byte) clamp(y);
 
-                if (j % 2 == 0 && i % 2 == 0 && uvIndex + 1 < out.length) {
+                if ((j & 1) == 0 && (i & 1) == 0) {
                     out[uvIndex++] = (byte) clamp(u);
                     out[uvIndex++] = (byte) clamp(v);
                 }
@@ -587,6 +581,21 @@ public class PoseVideoProcessor {
             this.audioTrack = audioTrack;
             this.started = started;
             this.encoderDone = false;
+        }
+    }
+
+    private static class FrameBuffers {
+        final Bitmap frameBitmap;
+        final int[] argbPixels;
+        final int[] reusedPixels;
+        final byte[] nv12Data;
+
+        FrameBuffers(int width, int height) {
+            int frameSize = width * height;
+            this.frameBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            this.argbPixels = new int[frameSize];
+            this.reusedPixels = new int[frameSize];
+            this.nv12Data = new byte[frameSize + frameSize / 2];
         }
     }
 }
