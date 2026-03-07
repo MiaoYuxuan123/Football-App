@@ -1,4 +1,3 @@
-
 # Offline Pose Video Pipeline
 
 This package adds offline MP4 post-processing after camera recording.
@@ -13,6 +12,13 @@ This package adds offline MP4 post-processing after camera recording.
 6. Frames are encoded to H.264 and muxed into a new MP4.
 7. Original audio track is copied into the output MP4.
 8. `TrainFragment` stores the processed output path and launches `VideoPlayerActivity`.
+
+## Accuracy-safe performance optimizations
+
+- Inference policy is unchanged: no frame skipping and no downscaled inference input.
+- Reuse per-frame conversion buffers (`int[]`, `byte[]`) to reduce GC pressure.
+- Reuse mutable frame bitmap for YUV->RGB conversion output.
+- Reuse drawing `Canvas` in `PoseFrameDrawer` to avoid per-frame allocation.
 
 ## Notes
 
