@@ -60,12 +60,18 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.nio.ByteBuffer;
 
 public class TrainFragment extends Fragment {
+
+    private static final String ARG_PRESET_MODE = "arg_preset_mode";
+    public static final String MODE_KEY_SHOOT = "shoot";
+    public static final String MODE_KEY_DRIBBLE = "dribble";
+    public static final String MODE_KEY_PASS = "pass";
 
     // 核心控件声明
     private PreviewView previewView;
@@ -510,10 +516,10 @@ public class TrainFragment extends Fragment {
         String newRecords = record + (oldRecords.isEmpty() ? "" : "\n" + oldRecords);
         SPUtils.putString(requireContext(), SP_KEY_TRAIN_RECORDS, newRecords);
 
-        updateMilestoneProgress(avgScore);
+        updateMilestoneProgress(record, avgScore);
     }
 
-    private void updateMilestoneProgress(int avgScore) {
+    private void updateMilestoneProgress(String record, int avgScore) {
         String account = SPUtils.getString(requireContext(), "account", "default");
         String recordKey = getTrainRecordsKey(account);
         String oldRecords = SPUtils.getString(requireContext(), recordKey, "");
