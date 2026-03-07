@@ -140,16 +140,22 @@ public class MilestoneDbHelper extends SQLiteOpenHelper {
         milestone.technicalScoresJson = new Gson().toJson(trend);
 
         float base = avg(trend);
-        float shoot = clamp(base + modeOffset(mode, "射门"), 50f, 99f);
-        float pass = clamp(base + modeOffset(mode, "传球"), 50f, 99f);
-        float dribble = clamp(base + Math.max(modeOffset(mode, "运球"), modeOffset(mode, "盘带")), 50f, 99f);
+        // Accumulative bonus: each dimension grows with practice in that skill (max +14)
+        float shootBonus = Math.min(14f, milestone.shootCount * 1.2f);
+        float passBonus = Math.min(14f, milestone.passCount * 1.2f);
+        float dribbleBonus = Math.min(14f, milestone.dribbleCount * 1.2f);
+        float totalBonus = Math.min(6f, milestone.trainCount * 0.4f);
+
+        float shoot = clamp(base + modeOffset(mode, "射门") + shootBonus, 50f, 99f);
+        float pass = clamp(base + modeOffset(mode, "传球") + passBonus, 50f, 99f);
+        float dribble = clamp(base + Math.max(modeOffset(mode, "运球"), modeOffset(mode, "盘带")) + dribbleBonus, 50f, 99f);
         List<Float> radar = new ArrayList<>();
         radar.add(shoot);
         radar.add(pass);
         radar.add(dribble);
-        radar.add(clamp(base - 6f, 45f, 95f));
-        radar.add(clamp(base - 2f, 45f, 98f));
-        radar.add(clamp(base, 45f, 99f));
+        radar.add(clamp(base - 6f + totalBonus, 45f, 95f));
+        radar.add(clamp(base - 2f + totalBonus, 45f, 98f));
+        radar.add(clamp(base + totalBonus * 0.5f, 45f, 99f));
         milestone.radarScoresJson = new Gson().toJson(radar);
 
         update(milestone);

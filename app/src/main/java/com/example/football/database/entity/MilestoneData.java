@@ -38,7 +38,7 @@ public class MilestoneData {
         d.dribbleCount = 0;
         d.passCount = 0;
         d.badgesJson = defaultBadgesJson();
-        d.technicalScoresJson = "[68,72,74,76,79]";
+        d.technicalScoresJson = "[]";
         d.radarScoresJson = "[72,70,74,66,71,69]";
         d.selectedStarId = 0;
         return d;

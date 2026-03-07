@@ -113,6 +113,17 @@
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
+            <TextView
+                android:id="@+id/tvTrendEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:gravity="center"
+                android:padding="24dp"
+                android:text="@string/milestone_trend_empty"
+                android:textColor="#999999"
+                android:textSize="14sp"
+                android:visibility="gone" />
+
             <com.github.mikephil.charting.charts.LineChart
                 android:id="@+id/chartTrend"
                 android:layout_width="match_parent"

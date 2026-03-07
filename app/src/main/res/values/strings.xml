@@ -17,6 +17,7 @@
     <string name="milestone_badge_status_unlocked">✅</string>
     <string name="milestone_badge_status_locked">🔒</string>
     <string name="milestone_dot_format"> %1$s Lv.%2$d </string>
+    <string name="milestone_trend_empty">完成首次训练后，这里将显示您的成长轨迹</string>
 
     <string name="train_current_action_format">当前动作：%1$s</string>
     <string name="train_confidence_format">置信度：%1$s</string>

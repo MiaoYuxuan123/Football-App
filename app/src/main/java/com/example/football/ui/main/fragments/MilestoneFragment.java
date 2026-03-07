@@ -52,16 +52,17 @@ public class MilestoneFragment extends Fragment {
     private TextView tvTrainingInfo;
     private TextView tvTrainCount;
     private TextView tvBadges;
+    private TextView tvTrendEmpty;
     private LineChart chartTrend;
     private RadarChart chartRadar;
     private Spinner spinnerStar;
     private LinearLayout layoutLevelDots;
 
-    // Star data: [shoot, pass, dribble, defend, fitness, awareness]
+    // Star data: [shoot, pass, dribble, defend, fitness, awareness] - values elevated so users rarely match
     private static final String[][] STARS = {
-            {"梅西", "95,92,95,35,75,94"},
-            {"C罗", "94,82,88,38,90,88"},
-            {"内马尔", "88,85,96,35,78,86"}
+            {"梅西", "98,96,98,52,92,97"},
+            {"C罗", "97,94,95,55,96,95"},
+            {"内马尔", "94,93,99,50,90,93"}
     };
 
     private static final String[] RADAR_LABELS = {"射门", "传球", "盘带", "防守", "体能", "意识"};
@@ -93,6 +94,7 @@ public class MilestoneFragment extends Fragment {
         tvTrainingInfo = view.findViewById(R.id.tvTrainingInfo);
         tvTrainCount = view.findViewById(R.id.tvTrainCount);
         tvBadges = view.findViewById(R.id.tvBadges);
+        tvTrendEmpty = view.findViewById(R.id.tvTrendEmpty);
         chartTrend = view.findViewById(R.id.chartTrend);
         chartRadar = view.findViewById(R.id.chartRadar);
         spinnerStar = view.findViewById(R.id.spinnerStar);
@@ -159,8 +161,14 @@ public class MilestoneFragment extends Fragment {
 
     private void setupCharts() {
         float[] trendScores = parseScores(data.technicalScoresJson);
-        if (trendScores != null && trendScores.length > 0) {
+        boolean hasTrendData = data.trainCount > 0 && trendScores != null && trendScores.length > 0;
+        if (hasTrendData) {
+            tvTrendEmpty.setVisibility(View.GONE);
+            chartTrend.setVisibility(View.VISIBLE);
             setupLineChart(trendScores);
+        } else {
+            tvTrendEmpty.setVisibility(View.VISIBLE);
+            chartTrend.setVisibility(View.GONE);
         }
 
         float[] myRadar = parseScores(data.radarScoresJson);
@@ -235,7 +243,7 @@ public class MilestoneFragment extends Fragment {
         xAxis.setGranularity(1f);
 
         YAxis yAxis = chartTrend.getAxisLeft();
-        yAxis.setAxisMinimum(50f);
+        yAxis.setAxisMinimum(0f);
         yAxis.setAxisMaximum(100f);
         chartTrend.getAxisRight().setEnabled(false);
         chartTrend.invalidate();
