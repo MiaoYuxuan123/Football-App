@@ -31,6 +31,7 @@ public class PoseFrameDrawer {
 
     private final Paint linePaint = new Paint();
     private final Paint pointPaint = new Paint();
+    private final Canvas canvas = new Canvas();
 
     public PoseFrameDrawer() {
         linePaint.setColor(Color.parseColor("#66FFEB3B"));
@@ -55,7 +56,7 @@ public class PoseFrameDrawer {
 
         float width = targetBitmap.getWidth();
         float height = targetBitmap.getHeight();
-        Canvas canvas = new Canvas(targetBitmap);
+        canvas.setBitmap(targetBitmap);
 
         for (int[] edge : POSE_CONNECTIONS) {
             if (edge[0] >= points.size() || edge[1] >= points.size()) {
@@ -100,4 +101,3 @@ public class PoseFrameDrawer {
         return Math.max(0f, Math.min(1f, normalizedY)) * height;
     }
 }
-
