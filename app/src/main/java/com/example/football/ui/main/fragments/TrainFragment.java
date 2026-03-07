@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
@@ -206,7 +205,9 @@ public class TrainFragment extends Fragment {
 
     private void updateStartButtonStyle(boolean isRetry) {
         btnStartRecognize.setText(isRetry ? getString(R.string.train_start_text_retry) : getString(R.string.train_start_text_default));
-        btnStartRecognize.setBackgroundColor(isRetry ? Color.parseColor("#FF9800") : Color.parseColor("#008000"));
+        btnStartRecognize.setBackgroundResource(isRetry
+                ? R.drawable.bg_train_button_retry
+                : R.drawable.bg_train_button_primary);
     }
 
     private void initCameraPreview() {

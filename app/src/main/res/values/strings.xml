@@ -110,4 +110,22 @@
     <string name="home_recommend_label_1">推荐动作</string>
     <string name="home_recommend_label_2">核心强化</string>
     <string name="home_recommend_label_3">恢复放松</string>
+
+    <string name="home_star_section_title">球星灵感墙</string>
+    <string name="home_star_section_subtitle">左右滑动查看动作模板，系统会自动循环</string>
+    <string name="home_star_banner_title_1">终结者风格：射门爆发</string>
+    <string name="home_star_banner_subtitle_1">3 组 x 10 次，重点练习起脚速度与摆腿稳定。</string>
+    <string name="home_star_banner_title_2">组织者风格：运球掌控</string>
+    <string name="home_star_banner_subtitle_2">小步快频 + 护球转身，连续 8 分钟提升控球节奏。</string>
+    <string name="home_star_banner_title_3">节拍器风格：传球精准</string>
+    <string name="home_star_banner_subtitle_3">双脚交替短传，保持重心前移，命中率更稳定。</string>
+
+    <string name="home_star_upload_button">上传我的球星照片</string>
+    <string name="home_star_storage_path_preview">项目内置文件夹: app/src/main/assets/star_photos&#10;本地上传文件夹: 加载中...</string>
+    <string name="home_star_storage_path_format">项目内置文件夹: %1$s&#10;本地上传文件夹: %2$s</string>
+    <string name="home_star_upload_none">未选择图片</string>
+    <string name="home_star_upload_success_format">已导入 %1$d 张照片</string>
+    <string name="home_star_upload_failed">图片导入失败，请重试</string>
+    <string name="home_star_local_subtitle">本地照片轮播</string>
+    <string name="home_star_asset_subtitle">项目内置照片轮播</string>
 </resources>

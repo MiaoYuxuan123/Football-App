@@ -1,24 +1,50 @@
 package com.example.football.ui.main.fragments;
 
+import android.annotation.SuppressLint;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.example.football.R;
 import com.example.football.database.MilestoneDbHelper;
 import com.example.football.ui.main.MainActivity;
 import com.example.football.utils.SPUtils;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+
 public class HomeFragment extends Fragment {
+
+    private static final long STAR_BANNER_AUTO_SCROLL_DELAY_MS = 3200L;
+    private static final String STAR_PHOTO_FOLDER_NAME = "star_photos";
+    private static final String STAR_PHOTO_ASSET_DIR = "star_photos";
 
     private TextView tvHomeGreeting;
     private TextView tvHomeTodayStatus;
@@ -35,9 +61,43 @@ public class HomeFragment extends Fragment {
     private TextView tvHomeRecommendMeta1;
     private TextView tvHomeRecommendMeta2;
     private TextView tvHomeRecommendMeta3;
+    private TextView tvHomeStarFolderPath;
     private ProgressBar pbHomeShoot;
     private ProgressBar pbHomeDribble;
     private ProgressBar pbHomePass;
+    private ViewPager2 vpHomeStar;
+    private LinearLayout layoutHomeStarIndicator;
+    private View btnHomeUploadStarPhotos;
+    private HomeStarBannerAdapter homeStarBannerAdapter;
+
+    private final Handler autoScrollHandler = new Handler(Looper.getMainLooper());
+    private final Runnable autoScrollRunnable = () -> {
+        if (vpHomeStar == null || homeStarBannerAdapter == null || homeStarBannerAdapter.getItemCount() <= 1) {
+            return;
+        }
+        int next = (vpHomeStar.getCurrentItem() + 1) % homeStarBannerAdapter.getItemCount();
+        vpHomeStar.setCurrentItem(next, true);
+        scheduleStarBannerAutoScroll();
+    };
+
+    private final ViewPager2.OnPageChangeCallback starPageChangeCallback = new ViewPager2.OnPageChangeCallback() {
+        @Override
+        public void onPageSelected(int position) {
+            updateStarIndicators(position);
+        }
+
+        @Override
+        public void onPageScrollStateChanged(int state) {
+            if (state == ViewPager2.SCROLL_STATE_DRAGGING) {
+                stopStarBannerAutoScroll();
+            } else if (state == ViewPager2.SCROLL_STATE_IDLE) {
+                scheduleStarBannerAutoScroll();
+            }
+        }
+    };
+
+    private final ActivityResultLauncher<String> starPhotosPickerLauncher =
+            registerForActivityResult(new ActivityResultContracts.GetMultipleContents(), this::handlePickedStarPhotos);
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -59,12 +119,18 @@ public class HomeFragment extends Fragment {
         tvHomeRecommendMeta1 = view.findViewById(R.id.tv_home_recommend_meta_1);
         tvHomeRecommendMeta2 = view.findViewById(R.id.tv_home_recommend_meta_2);
         tvHomeRecommendMeta3 = view.findViewById(R.id.tv_home_recommend_meta_3);
+        tvHomeStarFolderPath = view.findViewById(R.id.tv_home_star_folder_path);
         pbHomeShoot = view.findViewById(R.id.pb_home_shoot);
         pbHomeDribble = view.findViewById(R.id.pb_home_dribble);
         pbHomePass = view.findViewById(R.id.pb_home_pass);
+        vpHomeStar = view.findViewById(R.id.vp_home_star);
+        layoutHomeStarIndicator = view.findViewById(R.id.layout_home_star_indicator);
+        btnHomeUploadStarPhotos = view.findViewById(R.id.btn_home_upload_star_photos);
 
         applyStatusBarInset(view);
         bindHomeSummary();
+        bindStarFolderPath();
+        setupStarBanner();
 
         View btnStart = view.findViewById(R.id.btn_start_train);
         View cardRecommend1 = view.findViewById(R.id.card_home_recommend_1);
@@ -75,6 +141,7 @@ public class HomeFragment extends Fragment {
         applyPressFeedback(cardRecommend1);
         applyPressFeedback(cardRecommend2);
         applyPressFeedback(cardRecommend3);
+        applyPressFeedback(btnHomeUploadStarPhotos);
 
         btnStart.setOnClickListener(v -> navigateTo(new TrainFragment()));
         cardRecommend1.setOnClickListener(v ->
@@ -83,6 +150,7 @@ public class HomeFragment extends Fragment {
                 navigateTo(TrainFragment.newInstance(TrainFragment.MODE_KEY_DRIBBLE)));
         cardRecommend3.setOnClickListener(v ->
                 navigateTo(TrainFragment.newInstance(TrainFragment.MODE_KEY_PASS)));
+        btnHomeUploadStarPhotos.setOnClickListener(v -> starPhotosPickerLauncher.launch("image/*"));
 
         return view;
     }
@@ -102,9 +170,38 @@ public class HomeFragment extends Fragment {
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        scheduleStarBannerAutoScroll();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        stopStarBannerAutoScroll();
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
         bindHomeSummary();
+        bindStarFolderPath();
+        setupStarBanner();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        stopStarBannerAutoScroll();
+        if (vpHomeStar != null) {
+            vpHomeStar.unregisterOnPageChangeCallback(starPageChangeCallback);
+            vpHomeStar.setAdapter(null);
+        }
+        homeStarBannerAdapter = null;
+        vpHomeStar = null;
+        layoutHomeStarIndicator = null;
+        btnHomeUploadStarPhotos = null;
+        tvHomeStarFolderPath = null;
     }
 
     private void bindHomeSummary() {
@@ -186,6 +283,7 @@ public class HomeFragment extends Fragment {
         ((MainActivity) requireActivity()).replaceFragment(fragment);
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private void applyPressFeedback(View view) {
         if (view == null) {
             return;
@@ -193,11 +291,229 @@ public class HomeFragment extends Fragment {
         view.setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 v.animate().scaleX(0.97f).scaleY(0.97f).setDuration(90).start();
-            } else if (event.getAction() == MotionEvent.ACTION_UP
-                    || event.getAction() == MotionEvent.ACTION_CANCEL) {
+            } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                v.animate().scaleX(1f).scaleY(1f).setDuration(120).start();
+                v.performClick();
+            } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
                 v.animate().scaleX(1f).scaleY(1f).setDuration(120).start();
             }
             return false;
         });
+    }
+
+    private void setupStarBanner() {
+        if (vpHomeStar == null || !isAdded()) {
+            return;
+        }
+        List<HomeStarBannerAdapter.StarBannerItem> items = buildStarBannerItems();
+
+        homeStarBannerAdapter = new HomeStarBannerAdapter(items);
+        vpHomeStar.setAdapter(homeStarBannerAdapter);
+        vpHomeStar.unregisterOnPageChangeCallback(starPageChangeCallback);
+        vpHomeStar.registerOnPageChangeCallback(starPageChangeCallback);
+        vpHomeStar.setOffscreenPageLimit(1);
+        updateStarIndicators(0);
+        scheduleStarBannerAutoScroll();
+    }
+
+    private List<HomeStarBannerAdapter.StarBannerItem> buildStarBannerItems() {
+        List<File> localFiles = loadLocalStarPhotos();
+        if (!localFiles.isEmpty()) {
+            List<HomeStarBannerAdapter.StarBannerItem> items = new ArrayList<>();
+            for (File file : localFiles) {
+                items.add(HomeStarBannerAdapter.StarBannerItem.fromFilePath(
+                        file.getAbsolutePath(),
+                        file.getName(),
+                        getString(R.string.home_star_local_subtitle)
+                ));
+            }
+            return items;
+        }
+
+        List<HomeStarBannerAdapter.StarBannerItem> assetItems = loadAssetStarPhotos();
+        if (!assetItems.isEmpty()) {
+            return assetItems;
+        }
+
+        return Arrays.asList(
+                HomeStarBannerAdapter.StarBannerItem.fromDrawable(
+                        R.drawable.bg_home_star_card_blue,
+                        getString(R.string.home_star_banner_title_1),
+                        getString(R.string.home_star_banner_subtitle_1)),
+                HomeStarBannerAdapter.StarBannerItem.fromDrawable(
+                        R.drawable.bg_home_star_card_green,
+                        getString(R.string.home_star_banner_title_2),
+                        getString(R.string.home_star_banner_subtitle_2)),
+                HomeStarBannerAdapter.StarBannerItem.fromDrawable(
+                        R.drawable.bg_home_star_card_gold,
+                        getString(R.string.home_star_banner_title_3),
+                        getString(R.string.home_star_banner_subtitle_3))
+        );
+    }
+
+    private List<HomeStarBannerAdapter.StarBannerItem> loadAssetStarPhotos() {
+        List<HomeStarBannerAdapter.StarBannerItem> items = new ArrayList<>();
+        try {
+            String[] names = requireContext().getAssets().list(STAR_PHOTO_ASSET_DIR);
+            if (names == null || names.length == 0) {
+                return items;
+            }
+            Arrays.sort(names);
+            for (String name : names) {
+                String lower = name.toLowerCase(Locale.US);
+                if (!lower.endsWith(".jpg") && !lower.endsWith(".jpeg")
+                        && !lower.endsWith(".png") && !lower.endsWith(".webp")) {
+                    continue;
+                }
+                String assetPath = STAR_PHOTO_ASSET_DIR + "/" + name;
+                items.add(HomeStarBannerAdapter.StarBannerItem.fromAssetPath(
+                        assetPath,
+                        name,
+                        getString(R.string.home_star_asset_subtitle)
+                ));
+            }
+        } catch (IOException ignored) {
+            // Fallback to drawable cards when asset folder is absent.
+        }
+        return items;
+    }
+
+    private List<File> loadLocalStarPhotos() {
+        File folder = getStarPhotoDirectory();
+        File[] files = folder.listFiles(file -> {
+            if (file == null || !file.isFile()) {
+                return false;
+            }
+            String name = file.getName().toLowerCase(Locale.US);
+            return name.endsWith(".jpg") || name.endsWith(".jpeg")
+                    || name.endsWith(".png") || name.endsWith(".webp");
+        });
+        if (files == null || files.length == 0) {
+            return new ArrayList<>();
+        }
+        Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
+        return Arrays.asList(files);
+    }
+
+    private void bindStarFolderPath() {
+        if (!isAdded() || tvHomeStarFolderPath == null) {
+            return;
+        }
+        tvHomeStarFolderPath.setText(getString(
+                R.string.home_star_storage_path_format,
+                "app/src/main/assets/" + STAR_PHOTO_ASSET_DIR,
+                getStarPhotoDirectory().getAbsolutePath()));
+    }
+
+    private File getStarPhotoDirectory() {
+        File baseDir = requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        if (baseDir == null) {
+            baseDir = requireContext().getFilesDir();
+        }
+        File starDir = new File(baseDir, STAR_PHOTO_FOLDER_NAME);
+        if (!starDir.exists()) {
+            starDir.mkdirs();
+        }
+        return starDir;
+    }
+
+    private void handlePickedStarPhotos(List<Uri> uris) {
+        if (!isAdded()) {
+            return;
+        }
+        if (uris == null || uris.isEmpty()) {
+            Toast.makeText(requireContext(), getString(R.string.home_star_upload_none), Toast.LENGTH_SHORT).show();
+            return;
+        }
+        int copied = copyUrisToLocalStarFolder(uris);
+        if (copied > 0) {
+            Toast.makeText(requireContext(), getString(R.string.home_star_upload_success_format, copied), Toast.LENGTH_SHORT).show();
+            bindStarFolderPath();
+            setupStarBanner();
+        } else {
+            Toast.makeText(requireContext(), getString(R.string.home_star_upload_failed), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private int copyUrisToLocalStarFolder(@NonNull List<Uri> uris) {
+        int copied = 0;
+        File folder = getStarPhotoDirectory();
+        for (int i = 0; i < uris.size(); i++) {
+            Uri uri = uris.get(i);
+            String ext = guessImageExtension(uri);
+            File outFile = new File(folder, "star_" + System.currentTimeMillis() + "_" + i + ext);
+            try (InputStream input = requireContext().getContentResolver().openInputStream(uri);
+                 OutputStream output = new FileOutputStream(outFile)) {
+                if (input == null) {
+                    continue;
+                }
+                byte[] buffer = new byte[8192];
+                int len;
+                while ((len = input.read(buffer)) != -1) {
+                    output.write(buffer, 0, len);
+                }
+                output.flush();
+                copied++;
+            } catch (IOException e) {
+                outFile.delete();
+            }
+        }
+        return copied;
+    }
+
+    private String guessImageExtension(Uri uri) {
+        String type = requireContext().getContentResolver().getType(uri);
+        if (type == null) {
+            return ".jpg";
+        }
+        if (type.contains("png")) {
+            return ".png";
+        }
+        if (type.contains("webp")) {
+            return ".webp";
+        }
+        if (type.contains("jpeg") || type.contains("jpg")) {
+            return ".jpg";
+        }
+        return ".jpg";
+    }
+
+    private void updateStarIndicators(int position) {
+        if (layoutHomeStarIndicator == null || homeStarBannerAdapter == null) {
+            return;
+        }
+        int count = homeStarBannerAdapter.getItemCount();
+        if (layoutHomeStarIndicator.getChildCount() != count) {
+            layoutHomeStarIndicator.removeAllViews();
+            for (int i = 0; i < count; i++) {
+                View dot = new View(requireContext());
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dpToPx(8), dpToPx(8));
+                if (i > 0) {
+                    params.setMarginStart(dpToPx(6));
+                }
+                dot.setLayoutParams(params);
+                layoutHomeStarIndicator.addView(dot);
+            }
+        }
+        for (int i = 0; i < layoutHomeStarIndicator.getChildCount(); i++) {
+            layoutHomeStarIndicator.getChildAt(i).setBackgroundResource(
+                    i == position ? R.drawable.bg_home_dot_active : R.drawable.bg_home_dot_inactive);
+        }
+    }
+
+    private int dpToPx(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
+    }
+
+    private void scheduleStarBannerAutoScroll() {
+        stopStarBannerAutoScroll();
+        if (vpHomeStar == null || homeStarBannerAdapter == null || homeStarBannerAdapter.getItemCount() <= 1) {
+            return;
+        }
+        autoScrollHandler.postDelayed(autoScrollRunnable, STAR_BANNER_AUTO_SCROLL_DELAY_MS);
+    }
+
+    private void stopStarBannerAutoScroll() {
+        autoScrollHandler.removeCallbacks(autoScrollRunnable);
     }
 }
