@@ -128,6 +128,17 @@
             android:textColor="@color/md_textPrimary"
             android:textSize="16sp" />
 
+        <TextView
+            android:id="@+id/tv_ai_coach_feedback"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_train_panel_rounded"
+            android:padding="10dp"
+            android:text="AI虚拟教练：我在，开始后我会实时给你反馈"
+            android:textColor="@color/md_textPrimary"
+            android:textSize="14sp" />
+
         <Button
             android:id="@+id/btn_stop_recognize"
             android:layout_width="match_parent"

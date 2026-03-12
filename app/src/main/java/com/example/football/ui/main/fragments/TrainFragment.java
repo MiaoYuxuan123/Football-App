@@ -39,13 +39,11 @@ import androidx.fragment.app.Fragment;
 
 import com.example.football.R;
 import com.example.football.database.MilestoneDbHelper;
-import com.example.football.database.entity.MilestoneData;
+import com.example.football.coach.CoachFeedbackManager;
 import com.example.football.ui.train.VideoPlayerActivity;
 import com.example.football.utils.SPUtils;
 import com.example.football.video.PoseVideoProcessor;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.google.mediapipe.framework.image.MPImage;
 import com.google.mediapipe.framework.image.BitmapImageBuilder;
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark;
@@ -79,6 +77,7 @@ public class TrainFragment extends Fragment {
     private LinearLayout llRecognizing, llRecognized;
     private TextView tvCurrentAction, tvConfidence, tvScore, tvTotalCount, tvAvgScore, tvSuggestion;
     private TextView tvRecordingState;
+    private TextView tvAiCoachFeedback;
 
     // CameraX 相关
     private ExecutorService cameraExecutor;
@@ -95,6 +94,7 @@ public class TrainFragment extends Fragment {
 
     // MediaPipe 相关
     private PoseLandmarker poseLandmarker;
+    private CoachFeedbackManager coachFeedbackManager;
 
     // 识别状态控制
     private boolean isRecognizing = false;
@@ -163,12 +163,21 @@ public class TrainFragment extends Fragment {
         tvAvgScore = view.findViewById(R.id.tv_avg_score);
         tvSuggestion = view.findViewById(R.id.tv_suggestion);
         tvRecordingState = view.findViewById(R.id.tv_recording_state);
+        tvAiCoachFeedback = view.findViewById(R.id.tv_ai_coach_feedback);
 
         cameraExecutor = Executors.newSingleThreadExecutor();
         postProcessExecutor = Executors.newSingleThreadExecutor();
         poseVideoProcessor = new PoseVideoProcessor();
         currentMode = getString(R.string.train_mode_shoot);
         tvCurrentAction.setText(getString(R.string.train_current_action_format, currentMode));
+
+        coachFeedbackManager = new CoachFeedbackManager(requireContext().getApplicationContext(), feedback -> {
+            if (!isAdded()) {
+                return;
+            }
+            requireActivity().runOnUiThread(() -> tvAiCoachFeedback.setText(feedback));
+        });
+        coachFeedbackManager.showIdleHint();
 
         updateRecordStatus(getString(R.string.train_status_idle), false, getString(R.string.train_save_text_default));
         updateStartButtonStyle(false);
@@ -327,7 +336,13 @@ public class TrainFragment extends Fragment {
         int frameScore = calculateFrameScore(confidence);
 
         if (isRecognizing) {
-            maybeCountRep(confidence, frameScore);
+            boolean repCounted = maybeCountRep(confidence, frameScore);
+            if (coachFeedbackManager != null) {
+                coachFeedbackManager.onFrameAnalyzed(confidence, frameScore);
+                if (repCounted) {
+                    coachFeedbackManager.onRepCounted(actionCount);
+                }
+            }
         }
 
         requireActivity().runOnUiThread(() -> {
@@ -349,17 +364,18 @@ public class TrainFragment extends Fragment {
         Log.e(TAG, "PoseLandmarker runtime error count=" + poseErrorCount, error);
     }
 
-    private void maybeCountRep(float confidence, int frameScore) {
+    private boolean maybeCountRep(float confidence, int frameScore) {
         long now = SystemClock.elapsedRealtime();
         if (confidence < 0.5f || frameScore < 60) {
-            return;
+            return false;
         }
         if (now - lastRepTimestampMs < REP_INTERVAL_MS) {
-            return;
+            return false;
         }
         lastRepTimestampMs = now;
         actionCount++;
         totalScore += frameScore;
+        return true;
     }
 
     private float calculatePoseConfidence(List<NormalizedLandmark> landmarks) {
@@ -571,6 +587,9 @@ public class TrainFragment extends Fragment {
             if (isRecognizing) {
                 tvCurrentAction.setText(getString(R.string.train_current_action_format, currentMode));
             }
+            if (coachFeedbackManager != null) {
+                coachFeedbackManager.updateMode(currentMode);
+            }
         });
 
         btnStartRecognize.setOnClickListener(v -> {
@@ -588,6 +607,9 @@ public class TrainFragment extends Fragment {
             totalScore = 0;
             lastRepTimestampMs = 0L;
 
+            if (coachFeedbackManager != null) {
+                coachFeedbackManager.startSession(currentMode);
+            }
             startVideoRecording(currentSessionId);
             btnStartRecognize.setVisibility(View.GONE);
             llRecognizing.setVisibility(View.VISIBLE);
@@ -611,6 +633,9 @@ public class TrainFragment extends Fragment {
                 tvSuggestion.setText(getString(R.string.train_suggestion_dribble));
             } else if (currentMode.equals(getString(R.string.train_mode_pass))) {
                 tvSuggestion.setText(getString(R.string.train_suggestion_pass));
+            }
+            if (coachFeedbackManager != null) {
+                coachFeedbackManager.onChallengeCompleted(actionCount, avgScore);
             }
         });
 
@@ -689,6 +714,9 @@ public class TrainFragment extends Fragment {
         llRecognized.setVisibility(View.GONE);
         updateRecordStatus(getString(R.string.train_status_idle), false, getString(R.string.train_save_text_default));
         updateStartButtonStyle(false);
+        if (coachFeedbackManager != null) {
+            coachFeedbackManager.showIdleHint();
+        }
     }
 
     private void safeDeleteFile(@Nullable String path) {
@@ -718,6 +746,10 @@ public class TrainFragment extends Fragment {
         if (poseLandmarker != null) {
             poseLandmarker.close();
             poseLandmarker = null;
+        }
+        if (coachFeedbackManager != null) {
+            coachFeedbackManager.release();
+            coachFeedbackManager = null;
         }
     }
 
