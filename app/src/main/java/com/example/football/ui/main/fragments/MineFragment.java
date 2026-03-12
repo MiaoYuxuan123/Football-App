@@ -49,7 +49,7 @@ public class MineFragment extends Fragment {
         TextView tvAccount = view.findViewById(R.id.tv_account);
         String account = SPUtils.getString(requireActivity(), "account", "");
         currentAccount = TextUtils.isEmpty(account) ? "default" : account;
-        tvAccount.setText("账号：" + (TextUtils.isEmpty(account) ? "未登录用户" : account));
+        tvAccount.setText(TextUtils.isEmpty(account) ? "未登录用户" : account);
 
         ivAvatar = view.findViewById(R.id.iv_avatar);
         setupAvatarStyle();
@@ -125,8 +125,8 @@ public class MineFragment extends Fragment {
     private void setupAvatarStyle() {
         GradientDrawable avatarBg = new GradientDrawable();
         avatarBg.setShape(GradientDrawable.OVAL);
-        avatarBg.setColor(0xFFF1F4FB);
-        avatarBg.setStroke(dp(1), 0xFFD7DEEE);
+        avatarBg.setColor(0xFFF6F7FA);
+        avatarBg.setStroke(dp(3), 0xFFFFFFFF);
         ivAvatar.setBackground(avatarBg);
         ivAvatar.setClipToOutline(true);
     }
@@ -140,7 +140,7 @@ public class MineFragment extends Fragment {
         if (!TextUtils.isEmpty(path) && new File(path).exists()) {
             ivAvatar.setImageBitmap(BitmapFactory.decodeFile(path));
         } else {
-            ivAvatar.setImageDrawable(null);
+            ivAvatar.setImageResource(android.R.drawable.ic_menu_myplaces);
         }
     }
 }
