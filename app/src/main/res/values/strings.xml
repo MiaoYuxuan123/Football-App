@@ -157,4 +157,9 @@
     <string name="train_records_clear_confirm_message">将会删除所有训练记录，包括您的累计训练次数和里程碑中的等级，是否继续</string>
     <string name="common_yes">是</string>
     <string name="common_no">否</string>
+
+    <string name="home_brand_slogan">STRIKER AI:\nUNLEASH THE PRO</string>
+    <string name="home_efficiency_matrix_title">EFFICIENCY MATRIX</string>
+    <string name="home_daily_hyper_focus_title">Daily Hyper-Focus</string>
+    <string name="home_global_pulse_title">Global Pulse</string>
 </resources>

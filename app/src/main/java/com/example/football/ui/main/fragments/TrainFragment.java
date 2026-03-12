@@ -112,6 +112,7 @@ public class TrainFragment extends Fragment {
 
     private String pendingVideoPath = "";
     private boolean videoFinalizeDone = false;
+    private String pendingPresetMode;
 
     private final ActivityResultLauncher<String> cameraPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -122,6 +123,15 @@ public class TrainFragment extends Fragment {
                 }
             });
 
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        Bundle args = getArguments();
+        if (args != null) {
+            pendingPresetMode = args.getString(ARG_PRESET_MODE);
+        }
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -131,6 +141,7 @@ public class TrainFragment extends Fragment {
         initPoseLandmarker();
         startCameraFlow();
         setViewListeners();
+        applyPendingPresetMode();
 
         return view;
     }
@@ -656,6 +667,29 @@ public class TrainFragment extends Fragment {
         });
 
         btnDiscardResult.setOnClickListener(v -> discardCurrentSession());
+    }
+
+    public void applyPresetMode(@Nullable String presetMode) {
+        pendingPresetMode = presetMode;
+        applyPendingPresetMode();
+    }
+
+    private void applyPendingPresetMode() {
+        if (rgMode == null || pendingPresetMode == null || pendingPresetMode.trim().isEmpty()) {
+            return;
+        }
+        int checkedId = View.NO_ID;
+        if (MODE_KEY_SHOOT.equals(pendingPresetMode)) {
+            checkedId = R.id.rb_shoot;
+        } else if (MODE_KEY_DRIBBLE.equals(pendingPresetMode)) {
+            checkedId = R.id.rb_dribble;
+        } else if (MODE_KEY_PASS.equals(pendingPresetMode)) {
+            checkedId = R.id.rb_pass;
+        }
+        if (checkedId != View.NO_ID) {
+            rgMode.check(checkedId);
+        }
+        pendingPresetMode = null;
     }
 
     private void finishSaveFlow() {

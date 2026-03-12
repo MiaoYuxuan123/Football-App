@@ -3,6 +3,7 @@ package com.example.football.ui.main;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
@@ -26,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
     private Fragment milestoneFragment;
     private Fragment mineFragment;
     private String currentTag = TAG_HOME;
+    private BottomNavigationView bottomNav;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
 
         initFragments(savedInstanceState);
 
-        BottomNavigationView bottomNav = findViewById(R.id.bottom_nav);
+        bottomNav = findViewById(R.id.bottom_nav);
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.nav_home) {
@@ -127,19 +129,31 @@ public class MainActivity extends AppCompatActivity {
      */
     public void replaceFragment(@NonNull Fragment fragment) {
         if (fragment instanceof HomeFragment) {
-            switchTo(TAG_HOME);
+            if (bottomNav != null) {
+                bottomNav.setSelectedItemId(R.id.nav_home);
+            } else {
+                switchTo(TAG_HOME);
+            }
             return;
         }
         if (fragment instanceof TrainFragment) {
-            switchTo(TAG_TRAIN);
+            openTrainTab(null);
             return;
         }
         if (fragment instanceof MilestoneFragment) {
-            switchTo(TAG_MILESTONE);
+            if (bottomNav != null) {
+                bottomNav.setSelectedItemId(R.id.nav_milestone);
+            } else {
+                switchTo(TAG_MILESTONE);
+            }
             return;
         }
         if (fragment instanceof MineFragment) {
-            switchTo(TAG_MINE);
+            if (bottomNav != null) {
+                bottomNav.setSelectedItemId(R.id.nav_mine);
+            } else {
+                switchTo(TAG_MINE);
+            }
             return;
         }
 
@@ -148,6 +162,17 @@ public class MainActivity extends AppCompatActivity {
                 .replace(R.id.fragment_container, fragment)
                 .addToBackStack(null)
                 .commit();
+    }
+
+    public void openTrainTab(@Nullable String presetMode) {
+        if (trainFragment instanceof TrainFragment) {
+            ((TrainFragment) trainFragment).applyPresetMode(presetMode);
+        }
+        if (bottomNav != null) {
+            bottomNav.setSelectedItemId(R.id.nav_train);
+        } else {
+            switchTo(TAG_TRAIN);
+        }
     }
 
     private Fragment getFragmentByTag(@NonNull String tag) {
