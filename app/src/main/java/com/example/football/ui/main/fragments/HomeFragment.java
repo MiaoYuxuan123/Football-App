@@ -143,13 +143,10 @@ public class HomeFragment extends Fragment {
         applyPressFeedback(cardRecommend3);
         applyPressFeedback(btnHomeUploadStarPhotos);
 
-        btnStart.setOnClickListener(v -> navigateTo(new TrainFragment()));
-        cardRecommend1.setOnClickListener(v ->
-                navigateTo(TrainFragment.newInstance(TrainFragment.MODE_KEY_SHOOT)));
-        cardRecommend2.setOnClickListener(v ->
-                navigateTo(TrainFragment.newInstance(TrainFragment.MODE_KEY_DRIBBLE)));
-        cardRecommend3.setOnClickListener(v ->
-                navigateTo(TrainFragment.newInstance(TrainFragment.MODE_KEY_PASS)));
+        btnStart.setOnClickListener(v -> navigateToTrain(null));
+        cardRecommend1.setOnClickListener(v -> navigateToTrain(TrainFragment.MODE_KEY_SHOOT));
+        cardRecommend2.setOnClickListener(v -> navigateToTrain(TrainFragment.MODE_KEY_DRIBBLE));
+        cardRecommend3.setOnClickListener(v -> navigateToTrain(TrainFragment.MODE_KEY_PASS));
         btnHomeUploadStarPhotos.setOnClickListener(v -> starPhotosPickerLauncher.launch("image/*"));
 
         return view;
@@ -281,6 +278,13 @@ public class HomeFragment extends Fragment {
             return;
         }
         ((MainActivity) requireActivity()).replaceFragment(fragment);
+    }
+
+    private void navigateToTrain(String presetMode) {
+        if (!isAdded()) {
+            return;
+        }
+        ((MainActivity) requireActivity()).openTrainTab(presetMode);
     }
 
     @SuppressLint("ClickableViewAccessibility")

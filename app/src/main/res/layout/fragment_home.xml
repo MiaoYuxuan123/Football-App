@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F6F8FD"
+    android:background="#050505"
     android:fillViewport="true"
     android:scrollbars="none">
 
@@ -11,139 +11,144 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:paddingBottom="18dp">
 
         <LinearLayout
             android:id="@+id/layout_home_hero"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_home_hero"
-            android:elevation="2dp"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:paddingStart="16dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="16dp">
 
-            <TextView
-                android:id="@+id/tv_home_greeting"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/home_greeting_preview"
-                android:textColor="#FFFFFF"
-                android:textSize="24sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-            <TextView
-                android:layout_width="wrap_content"
+                <com.google.android.material.button.MaterialButton
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:minWidth="0dp"
+                    android:text=""
+                    app:backgroundTint="#1A101010"
+                    app:cornerRadius="14dp"
+                    app:icon="@drawable/ic_baseline_home_24"
+                    app:iconTint="#FF6A00"
+                    app:rippleColor="#33FF6A00"
+                    app:strokeColor="#33FF6A00"
+                    app:strokeWidth="1dp" />
+
+                <TextView
+                    android:id="@+id/tv_home_greeting"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="@string/home_greeting_preview"
+                    android:textColor="#FF6A00"
+                    android:textSize="28sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_home_upload_star_photos"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:minWidth="0dp"
+                    android:text=""
+                    app:backgroundTint="#1A101010"
+                    app:cornerRadius="14dp"
+                    app:icon="@drawable/ic_baseline_person_24"
+                    app:iconTint="#FF6A00"
+                    app:rippleColor="#33FF6A00"
+                    app:strokeColor="#33FF6A00"
+                    app:strokeWidth="1dp" />
+            </LinearLayout>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="@string/home_banner_subtitle"
-                android:textColor="#EAF2FF"
-                android:textSize="13sp" />
-
-            <TextView
-                android:id="@+id/tv_home_today_status"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/bg_home_chip"
-                android:paddingStart="12dp"
-                android:paddingTop="7dp"
-                android:paddingEnd="12dp"
-                android:paddingBottom="7dp"
-                android:text="@string/home_today_status_preview"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_start_train"
-                android:layout_width="wrap_content"
-                android:layout_height="46dp"
                 android:layout_marginTop="16dp"
-                android:text="@string/home_start_train"
-                android:textAllCaps="false"
-                android:textColor="#1A73E8"
-                android:textStyle="bold"
-                app:backgroundTint="#FFFFFF"
-                app:cornerRadius="14dp"
-                app:elevation="1dp"
-                app:rippleColor="#331A73E8" />
+                app:cardBackgroundColor="#0A162F"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#2B3E5F"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <TextView
+                        android:id="@+id/tv_home_today_status"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="#1A00D4FF"
+                        android:paddingStart="12dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="6dp"
+                        android:text="@string/home_today_status_preview"
+                        android:textColor="#00E7FF"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/home_brand_slogan"
+                        android:textColor="#FFFFFFFF"
+                        android:textSize="40sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_home_recommendation"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:lineSpacingMultiplier="1.2"
+                        android:text="@string/home_recommendation_beginner"
+                        android:textColor="#93A4BC"
+                        android:textSize="15sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            app:cardBackgroundColor="#FFFFFF"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
+            app:cardBackgroundColor="#241106"
             app:cardCornerRadius="18dp"
-            app:cardElevation="1dp"
-            app:strokeColor="#E4E8F3"
+            app:cardElevation="0dp"
+            app:strokeColor="#804014"
             app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="18dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/home_focus_title"
-                    android:textColor="#1F2A44"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tv_home_focus_mode"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:text="@string/home_focus_mode_preview"
-                    android:textColor="#334155"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/tv_home_focus_volume"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="@string/home_focus_volume_format"
-                    android:textColor="#667085"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/tv_home_focus_goal"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="@string/home_focus_goal_preview"
-                    android:textColor="#1A73E8"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            app:cardBackgroundColor="#FFFFFF"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="1dp"
-            app:strokeColor="#E4E8F3"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/home_overview_title"
-                    android:textColor="#1F2A44"
-                    android:textSize="16sp"
+                    android:text="@string/home_efficiency_matrix_title"
+                    android:textColor="#8F9AB0"
+                    android:textSize="13sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -152,8 +157,9 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
                     android:text="@string/home_total_count_preview"
-                    android:textColor="#334155"
-                    android:textSize="15sp" />
+                    android:textColor="#FFFFFF"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tv_home_mode_breakdown"
@@ -161,67 +167,43 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/home_mode_breakdown_preview"
-                    android:textColor="#667085"
+                    android:textColor="#B7C0D3"
                     android:textSize="14sp" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="10dp"
                     android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/train_mode_shoot"
-                        android:textColor="#475467"
-                        android:textSize="12sp" />
 
                     <ProgressBar
                         android:id="@+id/pb_home_shoot"
                         style="?android:attr/progressBarStyleHorizontal"
                         android:layout_width="match_parent"
-                        android:layout_height="8dp"
-                        android:layout_marginTop="4dp"
+                        android:layout_height="6dp"
                         android:max="100"
                         android:progress="0"
-                        android:progressTint="#34A853" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/train_mode_dribble"
-                        android:textColor="#475467"
-                        android:textSize="12sp" />
+                        android:progressTint="#FF6A00" />
 
                     <ProgressBar
                         android:id="@+id/pb_home_dribble"
                         style="?android:attr/progressBarStyleHorizontal"
                         android:layout_width="match_parent"
-                        android:layout_height="8dp"
-                        android:layout_marginTop="4dp"
+                        android:layout_height="6dp"
+                        android:layout_marginTop="6dp"
                         android:max="100"
                         android:progress="0"
-                        android:progressTint="#1A73E8" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/train_mode_pass"
-                        android:textColor="#475467"
-                        android:textSize="12sp" />
+                        android:progressTint="#00E7FF" />
 
                     <ProgressBar
                         android:id="@+id/pb_home_pass"
                         style="?android:attr/progressBarStyleHorizontal"
                         android:layout_width="match_parent"
-                        android:layout_height="8dp"
-                        android:layout_marginTop="4dp"
+                        android:layout_height="6dp"
+                        android:layout_marginTop="6dp"
                         android:max="100"
                         android:progress="0"
-                        android:progressTint="#FBBC04" />
+                        android:progressTint="#7F8EA8" />
                 </LinearLayout>
 
                 <TextView
@@ -230,220 +212,202 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
                     android:text="@string/home_success_rate_preview"
-                    android:textColor="#334155"
-                    android:textSize="15sp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            app:cardBackgroundColor="#FFFFFF"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="1dp"
-            app:strokeColor="#E4E8F3"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/home_recommend_train_title"
-                    android:textColor="#1F2A44"
+                    android:textColor="#FFFFFF"
                     android:textSize="16sp"
                     android:textStyle="bold" />
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/card_home_recommend_1"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    app:cardBackgroundColor="#EEF4FF"
-                    app:cardCornerRadius="14dp"
-                    app:cardElevation="0dp"
-                    app:rippleColor="#261A73E8"
-                    app:strokeColor="#D5E3FF"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="12dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/home_recommend_label_1"
-                            android:textColor="#1A73E8"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tv_home_recommend_1"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="@string/home_recommend_item_1_preview"
-                            android:textColor="#20304A"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tv_home_recommend_meta_1"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="@string/home_recommend_meta_default"
-                            android:textColor="#5B6B83"
-                            android:textSize="12sp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="@string/home_recommend_cta"
-                            android:textColor="#1A73E8"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/card_home_recommend_2"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    app:cardBackgroundColor="#ECFBF2"
-                    app:cardCornerRadius="14dp"
-                    app:cardElevation="0dp"
-                    app:rippleColor="#2634A853"
-                    app:strokeColor="#CDEFD9"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="12dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/home_recommend_label_2"
-                            android:textColor="#1F8C4E"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tv_home_recommend_2"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="@string/home_recommend_item_2"
-                            android:textColor="#20304A"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tv_home_recommend_meta_2"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="@string/home_recommend_meta_core"
-                            android:textColor="#5B6B83"
-                            android:textSize="12sp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="@string/home_recommend_cta"
-                            android:textColor="#1F8C4E"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/card_home_recommend_3"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    app:cardBackgroundColor="#FFF8EA"
-                    app:cardCornerRadius="14dp"
-                    app:cardElevation="0dp"
-                    app:rippleColor="#26FBBC04"
-                    app:strokeColor="#FCE3B6"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="12dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/home_recommend_label_3"
-                            android:textColor="#B07A00"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tv_home_recommend_3"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="@string/home_recommend_item_3"
-                            android:textColor="#20304A"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tv_home_recommend_meta_3"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="@string/home_recommend_meta_recovery"
-                            android:textColor="#5B6B83"
-                            android:textSize="12sp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="@string/home_recommend_cta"
-                            android:textColor="#B07A00"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/card_home_star_banner"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            app:cardBackgroundColor="#FFFFFF"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="1dp"
-            app:strokeColor="#DCE6FA"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="22dp"
+            android:layout_marginEnd="16dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/home_daily_hyper_focus_title"
+                android:textColor="#FFFFFF"
+                android:textSize="33sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_start_train"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="@string/home_start_train"
+                android:textAllCaps="false"
+                android:textColor="#FF6A00"
+                android:textSize="12sp"
+                app:backgroundTint="#000000"
+                app:cornerRadius="12dp"
+                app:rippleColor="#33FF6A00"
+                app:strokeColor="#55FF6A00"
+                app:strokeWidth="1dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_home_recommend_1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1E0D05"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:rippleColor="#33FF6A00"
+                app:strokeColor="#663017"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/home_recommend_label_1"
+                        android:textColor="#FF6A00"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_home_recommend_1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/home_recommend_item_1_preview"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_home_recommend_meta_1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/home_recommend_meta_default"
+                        android:textColor="#7F8CA3"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_home_recommend_2"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#071A1C"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:rippleColor="#3300E7FF"
+                app:strokeColor="#1A4E56"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/home_recommend_label_2"
+                        android:textColor="#00E7FF"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_home_recommend_2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/home_recommend_item_2"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_home_recommend_meta_2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/home_recommend_meta_core"
+                        android:textColor="#7F8CA3"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_home_focus_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:text="@string/home_focus_mode_preview"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_home_focus_volume"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="16dp"
+            android:text="@string/home_focus_volume_format"
+            android:textColor="#9AA8BF"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/tv_home_focus_goal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginEnd="16dp"
+            android:text="@string/home_focus_goal_preview"
+            android:textColor="#FF6A00"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_home_recommend_3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:cardBackgroundColor="#121212"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:rippleColor="#33FF6A00"
+            app:strokeColor="#2D2D2D"
             app:strokeWidth="1dp">
 
             <LinearLayout
@@ -455,116 +419,87 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/home_star_section_title"
-                    android:textColor="#1F2A44"
-                    android:textSize="16sp"
+                    android:text="@string/home_recommend_label_3"
+                    android:textColor="#FFB067"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
 
                 <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="@string/home_star_section_subtitle"
-                    android:textColor="#667085"
-                    android:textSize="12sp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_home_upload_star_photos"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/home_star_upload_button"
-                    android:textAllCaps="false"
-                    android:textSize="12sp"
-                    app:backgroundTint="#E8F0FE"
-                    app:cornerRadius="10dp"
-                    app:elevation="0dp"
-                    app:icon="@drawable/ic_baseline_person_24"
-                    app:iconPadding="6dp"
-                    app:iconTint="#1A73E8"
-                    app:rippleColor="#331A73E8"
-                    app:strokeColor="#C9DCF9"
-                    app:strokeWidth="1dp" />
-
-                <TextView
-                    android:id="@+id/tv_home_star_folder_path"
+                    android:id="@+id/tv_home_recommend_3"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="@string/home_star_storage_path_preview"
-                    android:textColor="#8A94A8"
-                    android:textSize="11sp" />
-
-                <androidx.viewpager2.widget.ViewPager2
-                    android:id="@+id/vp_home_star"
-                    android:layout_width="match_parent"
-                    android:layout_height="188dp"
-                    android:layout_marginTop="10dp" />
-
-                <LinearLayout
-                    android:id="@+id/layout_home_star_indicator"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="10dp"
-                    android:orientation="horizontal">
-
-                    <View
-                        android:layout_width="8dp"
-                        android:layout_height="8dp"
-                        android:background="@drawable/bg_home_dot_active" />
-
-                    <View
-                        android:layout_width="8dp"
-                        android:layout_height="8dp"
-                        android:layout_marginStart="6dp"
-                        android:background="@drawable/bg_home_dot_inactive" />
-
-                    <View
-                        android:layout_width="8dp"
-                        android:layout_height="8dp"
-                        android:layout_marginStart="6dp"
-                        android:background="@drawable/bg_home_dot_inactive" />
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:layout_marginBottom="12dp"
-            app:cardBackgroundColor="#FFFFFF"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="1dp"
-            app:strokeColor="#E4E8F3"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/home_suggestion_title"
-                    android:textColor="#1F2A44"
-                    android:textSize="16sp"
+                    android:text="@string/home_recommend_item_3"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/tv_home_recommendation"
+                    android:id="@+id/tv_home_recommend_meta_3"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:lineSpacingMultiplier="1.25"
-                    android:text="@string/home_recommendation_beginner"
-                    android:textColor="#475569"
-                    android:textSize="14sp" />
+                    android:layout_marginTop="4dp"
+                    android:text="@string/home_recommend_meta_recovery"
+                    android:textColor="#7F8CA3"
+                    android:textSize="12sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="22dp"
+            android:layout_marginEnd="16dp"
+            android:text="@string/home_global_pulse_title"
+            android:textColor="#FFFFFF"
+            android:textSize="31sp"
+            android:textStyle="bold" />
+
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/vp_home_star"
+            android:layout_width="match_parent"
+            android:layout_height="206dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp" />
+
+        <LinearLayout
+            android:id="@+id/layout_home_star_indicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal">
+
+            <View
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/bg_home_dot_active" />
+
+            <View
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_home_dot_inactive" />
+
+            <View
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_home_dot_inactive" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_home_star_folder_path"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
+            android:text="@string/home_star_storage_path_preview"
+            android:textColor="#69758A"
+            android:textSize="11sp" />
 
     </LinearLayout>
 </ScrollView>
