@@ -162,4 +162,13 @@
     <string name="home_efficiency_matrix_title">EFFICIENCY MATRIX</string>
     <string name="home_daily_hyper_focus_title">Daily Hyper-Focus</string>
     <string name="home_global_pulse_title">Global Pulse</string>
+
+    <string name="splash_chip">SYSTEM ONLINE</string>
+    <string name="splash_brand">STRIKER AI</string>
+    <string name="splash_title">足智多谋</string>
+    <string name="splash_subtitle">让每次训练更科学、更有趣，准备进入你的 AI 球场。</string>
+    <string name="splash_loading">正在加载训练空间…</string>
+    <string name="splash_logo_content_description">足球启动图标</string>
+    <string name="splash_percent_format">%1$d%%</string>
+    <string name="splash_percent_zero">0%%</string>
 </resources>
