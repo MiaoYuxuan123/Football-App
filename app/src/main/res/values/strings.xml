@@ -65,6 +65,22 @@
     <string name="train_toast_wait_post_process">关键点视频还在处理中，请稍候</string>
     <string name="train_toast_record_discarded">本次训练已不保存</string>
 
+    <string name="train_ai_coach_ready">AI虚拟教练：我在，开始后我会实时给你反馈</string>
+    <string name="train_ai_coach_session_start">准备开始，请保持节奏与稳定性</string>
+    <string name="train_ai_feedback_good_shoot">漂亮！支撑脚很稳！</string>
+    <string name="train_ai_feedback_good_dribble">节奏很好！触球很连贯！</string>
+    <string name="train_ai_feedback_good_pass">不错！传球重心控制得很好！</string>
+    <string name="train_ai_feedback_fix_shoot">膝盖再弯一点，发力会更足哦～</string>
+    <string name="train_ai_feedback_fix_dribble">身体再压低一点，控球会更稳哦～</string>
+    <string name="train_ai_feedback_fix_pass">支撑脚再稳一点，传球会更准哦～</string>
+    <string name="train_ai_challenge_done_format">恭喜你解锁【%1$s】称号！</string>
+    <string name="train_ai_challenge_title_shoot">射门高手</string>
+    <string name="train_ai_challenge_title_shoot_starter">射门新星</string>
+    <string name="train_ai_challenge_title_dribble">盘带大师</string>
+    <string name="train_ai_challenge_title_dribble_starter">盘带新星</string>
+    <string name="train_ai_challenge_title_pass">传球指挥官</string>
+    <string name="train_ai_challenge_title_pass_starter">传球新星</string>
+
     <string name="train_suggestion_shoot">- 支撑脚不稳\n- 射门角度偏低</string>
     <string name="train_suggestion_dribble">- 运球频率过快\n- 重心偏高</string>
     <string name="train_suggestion_pass">- 传球力度不足\n- 传球方向偏差</string>
