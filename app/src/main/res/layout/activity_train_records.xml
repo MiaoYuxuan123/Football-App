@@ -6,21 +6,23 @@
     android:background="@color/md_background"
     android:orientation="vertical">
 
+    <!-- Top app bar -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="64dp"
         android:background="@color/md_surface"
         android:gravity="center_vertical"
-        android:paddingLeft="12dp"
-        android:paddingRight="12dp">
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp">
 
         <TextView
             android:id="@+id/btn_back"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="返回"
-            android:textColor="@color/md_primary"
-            android:textSize="15sp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:gravity="center"
+            android:text="&lt;"
+            android:textColor="@color/md_textPrimary"
+            android:textSize="22sp"
             android:textStyle="bold" />
 
         <TextView
@@ -28,15 +30,25 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="全部训练记录"
+            android:text="Technical Analysis"
             android:textColor="@color/md_textPrimary"
-            android:textSize="18sp"
+            android:textSize="28sp"
             android:textStyle="bold" />
 
-        <View
+        <TextView
             android:layout_width="36dp"
-            android:layout_height="1dp" />
+            android:layout_height="36dp"
+            android:gravity="center"
+            android:text="..."
+            android:textColor="@color/md_textPrimary"
+            android:textSize="16sp"
+            android:textStyle="bold" />
     </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E2E7F2" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -50,32 +62,302 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <TextView
-                android:id="@+id/tv_empty_records"
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="400dp"
+                android:background="@drawable/bg_train_records_hero"
+                android:padding="16dp">
+
+                <VideoView
+                    android:id="@+id/vv_preview"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_margin="4dp" />
+
+                <TextView
+                    android:id="@+id/tv_knee_angle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|end"
+                    android:background="@drawable/bg_train_records_tag"
+                    android:paddingStart="12dp"
+                    android:paddingTop="8dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="8dp"
+                    android:text="KNEE ANGLE\n115 deg"
+                    android:textColor="#72FF52"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_hip_rotation"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical|start"
+                    android:background="@drawable/bg_train_records_tag"
+                    android:paddingStart="12dp"
+                    android:paddingTop="8dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="8dp"
+                    android:text="HIP ROTATION\nACTIVE"
+                    android:textColor="#58E8FF"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_power_output"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|start"
+                    android:layout_marginBottom="52dp"
+                    android:background="@drawable/bg_train_records_tag_warning"
+                    android:paddingStart="12dp"
+                    android:paddingTop="8dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="8dp"
+                    android:text="POWER OUTPUT\nHIGH"
+                    android:textColor="#FF7C30"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:layout_gravity="bottom"
+                    android:layout_marginBottom="42dp"
+                    android:background="#33FFFFFF" />
+
+                <View
+                    android:id="@+id/view_video_progress"
+                    android:layout_width="230dp"
+                    android:layout_height="4dp"
+                    android:layout_gravity="bottom|start"
+                    android:layout_marginBottom="42dp"
+                    android:background="#FF6A2A" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tv_video_current"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="00:00"
+                        android:textColor="@android:color/white"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/tv_video_toggle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="play"
+                        android:textColor="@android:color/white"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/tv_video_total"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:text="00:00"
+                        android:textColor="@android:color/white"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </FrameLayout>
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingBottom="8dp"
-                android:text="暂无训练记录，去训练页完成一次训练后再回来查看。"
-                android:textColor="@color/md_textSecondary"
-                android:textSize="14sp"
-                android:visibility="gone" />
+                android:layout_marginTop="16dp"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="108dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_train_records_metric_card"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="IMPACT FORCE"
+                        android:textColor="#67758F"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/tv_impact_force_value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="840 N"
+                        android:textColor="#11162A"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="12dp"
+                    android:layout_height="1dp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="108dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_train_records_metric_card"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="SWING SPEED"
+                        android:textColor="#67758F"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/tv_swing_speed_value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="18.2 m/s"
+                        android:textColor="#11162A"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="Technical Insights"
+                android:textColor="#11162A"
+                android:textSize="34sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_train_records_notice_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Biomechanics Alert"
+                    android:textColor="#11162A"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_insight_body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="Select one record below to preview video and technical analysis."
+                    android:textColor="#355070"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:id="@+id/tv_empty_records"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="No training records yet. Complete one session and come back to review your motion trail."
+                    android:textColor="#355070"
+                    android:textSize="15sp"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_train_records_chain_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Kinetic Chain Analysis"
+                    android:textColor="#11162A"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_chain_line_1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="- Plant foot stability: Excellent (98%)"
+                    android:textColor="#2D3F58"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:id="@+id/tv_chain_line_2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="- Torso lean: 12 deg (Within optimal range)"
+                    android:textColor="#2D3F58"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:id="@+id/tv_chain_line_3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="- Follow-through can be extended by 5-10 cm"
+                    android:textColor="#2D3F58"
+                    android:textSize="15sp" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Training Records"
+                android:textColor="#11162A"
+                android:textSize="20sp"
+                android:textStyle="bold" />
 
             <LinearLayout
                 android:id="@+id/layout_records_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
                 android:orientation="vertical" />
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="10dp" />
+
         </LinearLayout>
     </ScrollView>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_clear_records"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_margin="16dp"
-        android:text="清空记录"
+        android:layout_height="52dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:text="Clear Records"
         android:textAllCaps="false"
-        app:backgroundTint="@color/md_primary"
-        app:cornerRadius="14dp" />
+        android:textSize="15sp"
+        app:backgroundTint="#FF6D3A"
+        app:cornerRadius="16dp" />
 
 </LinearLayout>
