@@ -186,7 +186,7 @@
     <string name="milestone_new_title">我的里程碑</string>
     <string name="milestone_header_level_format">等级 %1$d</string>
     <string name="milestone_percent_format">%1$d%%</string>
-    <string name="milestone_progress_label">总目标</string>
+    <string name="milestone_progress_label">CURRENT FORM</string>
     <string name="milestone_month_hours_format">本月您已完成 %1$d 小时训练。</string>
     <string name="milestone_experience_detail_format">经验 %1$d / %2$d · 单次训练 +%3$d XP</string>
 

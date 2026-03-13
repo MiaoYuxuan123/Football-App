@@ -1,6 +1,10 @@
 package com.example.football.ui.main.fragments;
 
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,6 +19,7 @@ import com.example.football.R;
 import com.example.football.database.MilestoneDbHelper;
 import com.example.football.database.entity.MilestoneData;
 import com.example.football.ui.main.MainActivity;
+import com.example.football.ui.main.views.DonutProgressView;
 import com.example.football.utils.SPUtils;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 import com.google.gson.Gson;
@@ -32,9 +37,7 @@ public class MilestoneFragment extends Fragment {
     private TextView tvLevel;
     private TextView tvTechnicalTitle;
     private TextView tvLevelBadge;
-    private CircularProgressIndicator progressMilestone;
-    private CircularProgressIndicator progressOrbitTop;
-    private CircularProgressIndicator progressOrbitBottom;
+    private DonutProgressView progressMilestone;
     private TextView tvProgressPercent;
     private TextView tvProgressLabel;
     private TextView tvExperience;
@@ -99,8 +102,6 @@ public class MilestoneFragment extends Fragment {
         tvTechnicalTitle = view.findViewById(R.id.tvTechnicalTitle);
         tvLevelBadge = view.findViewById(R.id.tvLevelBadge);
         progressMilestone = view.findViewById(R.id.progressMilestone);
-        progressOrbitTop = view.findViewById(R.id.progressOrbitTop);
-        progressOrbitBottom = view.findViewById(R.id.progressOrbitBottom);
         tvProgressPercent = view.findViewById(R.id.tvProgressPercent);
         tvProgressLabel = view.findViewById(R.id.tvProgressLabel);
         tvExperience = view.findViewById(R.id.tvExperience);
@@ -167,14 +168,9 @@ public class MilestoneFragment extends Fragment {
 
         int progress = Math.max(0, Math.min(100,
                 Math.round(data.experience * 100f / Math.max(1, data.experienceToNext))));
+        progressMilestone.setMax(100);
         progressMilestone.setProgress(progress);
-        if (progressOrbitTop != null) {
-            progressOrbitTop.setProgress(progress);
-        }
-        if (progressOrbitBottom != null) {
-            progressOrbitBottom.setProgress(progress);
-        }
-        tvProgressPercent.setText(getString(R.string.milestone_percent_format, progress));
+        tvProgressPercent.setText(buildStyledPercent(progress));
         tvProgressLabel.setText(getString(R.string.milestone_progress_label));
 
         int monthHours = Math.max(1, data.trainCount * 2);
@@ -185,6 +181,19 @@ public class MilestoneFragment extends Fragment {
         MilestoneDbHelper.TrainingSummary summary = dbHelper.getTrainingSummary(data.account);
         tvTrainCount.setText(getString(R.string.milestone_star_compare_subtitle_format,
                 summary.totalCount, summary.avgScore));
+    }
+
+    private CharSequence buildStyledPercent(int progress) {
+        String text = getString(R.string.milestone_percent_format, progress);
+        SpannableString styled = new SpannableString(text);
+        int percentIndex = text.indexOf('%');
+        if (percentIndex >= 0) {
+            styled.setSpan(new ForegroundColorSpan(0xFFFF6A13), percentIndex, text.length(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            styled.setSpan(new RelativeSizeSpan(0.58f), percentIndex, text.length(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return styled;
     }
 
     private void bindBadges() {
