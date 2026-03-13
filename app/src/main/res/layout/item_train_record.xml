@@ -22,7 +22,7 @@
         android:textSize="14sp" />
 
     <TextView
-        android:id="@+id/tv_record_delete"
+        android:id="@+id/tv_record_share"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_train_records_delete"
@@ -30,9 +30,22 @@
         android:paddingTop="6dp"
         android:paddingEnd="10dp"
         android:paddingBottom="6dp"
-        android:text="Delete"
+        android:text="@string/train_record_share"
+        android:textColor="#4A72D9"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/tv_record_delete"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/bg_train_records_delete"
+        android:paddingStart="10dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="6dp"
+        android:text="@string/train_record_delete"
         android:textColor="#D95C5C"
         android:textSize="13sp" />
 
 </LinearLayout>
-
