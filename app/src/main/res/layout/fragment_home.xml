@@ -490,16 +490,5 @@
                 android:background="@drawable/bg_home_dot_inactive" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tv_home_star_folder_path"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="16dp"
-            android:text="@string/home_star_storage_path_preview"
-            android:textColor="#69758A"
-            android:textSize="11sp" />
-
     </LinearLayout>
 </ScrollView>

@@ -28,28 +28,4 @@
         android:padding="11dp"
         android:src="@drawable/ic_baseline_sports_soccer_24"
         app:tint="#FFFFFF" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-        <TextView
-            android:id="@+id/tv_home_star_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tv_home_star_subtitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="#EAF0FF"
-            android:textSize="13sp" />
-    </LinearLayout>
 </FrameLayout>
