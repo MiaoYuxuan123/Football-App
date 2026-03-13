@@ -8,7 +8,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -74,8 +73,8 @@ public class HomeStarBannerAdapter extends RecyclerView.Adapter<HomeStarBannerAd
         if (!TextUtils.isEmpty(item.photoFilePath)) {
             holder.ivHomeStarPhoto.setImageURI(Uri.fromFile(new File(item.photoFilePath)));
         } else if (!TextUtils.isEmpty(item.photoAssetPath)) {
-            try (InputStream is = holder.itemView.getContext().getAssets().open(item.photoAssetPath)) {
-                Bitmap bitmap = BitmapFactory.decodeStream(is);
+            try (InputStream inputStream = holder.itemView.getContext().getAssets().open(item.photoAssetPath)) {
+                Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
                 holder.ivHomeStarPhoto.setImageBitmap(bitmap);
             } catch (Exception ignored) {
                 holder.ivHomeStarPhoto.setImageDrawable(null);
@@ -85,8 +84,6 @@ public class HomeStarBannerAdapter extends RecyclerView.Adapter<HomeStarBannerAd
         } else {
             holder.ivHomeStarPhoto.setImageDrawable(null);
         }
-        holder.tvHomeStarTitle.setText(item.title);
-        holder.tvHomeStarSubtitle.setText(item.subtitle);
     }
 
     @Override
@@ -96,14 +93,10 @@ public class HomeStarBannerAdapter extends RecyclerView.Adapter<HomeStarBannerAd
 
     public static class StarViewHolder extends RecyclerView.ViewHolder {
         private final ImageView ivHomeStarPhoto;
-        private final TextView tvHomeStarTitle;
-        private final TextView tvHomeStarSubtitle;
 
         StarViewHolder(@NonNull View itemView) {
             super(itemView);
             ivHomeStarPhoto = itemView.findViewById(R.id.iv_home_star_photo);
-            tvHomeStarTitle = itemView.findViewById(R.id.tv_home_star_title);
-            tvHomeStarSubtitle = itemView.findViewById(R.id.tv_home_star_subtitle);
         }
     }
 }

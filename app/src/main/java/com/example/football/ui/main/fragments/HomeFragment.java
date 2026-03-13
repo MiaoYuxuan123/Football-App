@@ -61,7 +61,6 @@ public class HomeFragment extends Fragment {
     private TextView tvHomeRecommendMeta1;
     private TextView tvHomeRecommendMeta2;
     private TextView tvHomeRecommendMeta3;
-    private TextView tvHomeStarFolderPath;
     private ProgressBar pbHomeShoot;
     private ProgressBar pbHomeDribble;
     private ProgressBar pbHomePass;
@@ -119,7 +118,6 @@ public class HomeFragment extends Fragment {
         tvHomeRecommendMeta1 = view.findViewById(R.id.tv_home_recommend_meta_1);
         tvHomeRecommendMeta2 = view.findViewById(R.id.tv_home_recommend_meta_2);
         tvHomeRecommendMeta3 = view.findViewById(R.id.tv_home_recommend_meta_3);
-        tvHomeStarFolderPath = view.findViewById(R.id.tv_home_star_folder_path);
         pbHomeShoot = view.findViewById(R.id.pb_home_shoot);
         pbHomeDribble = view.findViewById(R.id.pb_home_dribble);
         pbHomePass = view.findViewById(R.id.pb_home_pass);
@@ -129,7 +127,6 @@ public class HomeFragment extends Fragment {
 
         applyStatusBarInset(view);
         bindHomeSummary();
-        bindStarFolderPath();
         setupStarBanner();
 
         View btnStart = view.findViewById(R.id.btn_start_train);
@@ -182,7 +179,6 @@ public class HomeFragment extends Fragment {
     public void onResume() {
         super.onResume();
         bindHomeSummary();
-        bindStarFolderPath();
         setupStarBanner();
     }
 
@@ -198,7 +194,6 @@ public class HomeFragment extends Fragment {
         vpHomeStar = null;
         layoutHomeStarIndicator = null;
         btnHomeUploadStarPhotos = null;
-        tvHomeStarFolderPath = null;
     }
 
     private void bindHomeSummary() {
@@ -321,6 +316,11 @@ public class HomeFragment extends Fragment {
     }
 
     private List<HomeStarBannerAdapter.StarBannerItem> buildStarBannerItems() {
+        List<HomeStarBannerAdapter.StarBannerItem> assetItems = loadAssetStarPhotos();
+        if (!assetItems.isEmpty()) {
+            return assetItems;
+        }
+
         List<File> localFiles = loadLocalStarPhotos();
         if (!localFiles.isEmpty()) {
             List<HomeStarBannerAdapter.StarBannerItem> items = new ArrayList<>();
@@ -332,11 +332,6 @@ public class HomeFragment extends Fragment {
                 ));
             }
             return items;
-        }
-
-        List<HomeStarBannerAdapter.StarBannerItem> assetItems = loadAssetStarPhotos();
-        if (!assetItems.isEmpty()) {
-            return assetItems;
         }
 
         return Arrays.asList(
@@ -370,14 +365,10 @@ public class HomeFragment extends Fragment {
                     continue;
                 }
                 String assetPath = STAR_PHOTO_ASSET_DIR + "/" + name;
-                items.add(HomeStarBannerAdapter.StarBannerItem.fromAssetPath(
-                        assetPath,
-                        name,
-                        getString(R.string.home_star_asset_subtitle)
-                ));
+                items.add(HomeStarBannerAdapter.StarBannerItem.fromAssetPath(assetPath, "", ""));
             }
         } catch (IOException ignored) {
-            // Fallback to drawable cards when asset folder is absent.
+            // Fallback when asset folder is missing.
         }
         return items;
     }
@@ -397,16 +388,6 @@ public class HomeFragment extends Fragment {
         }
         Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
         return Arrays.asList(files);
-    }
-
-    private void bindStarFolderPath() {
-        if (!isAdded() || tvHomeStarFolderPath == null) {
-            return;
-        }
-        tvHomeStarFolderPath.setText(getString(
-                R.string.home_star_storage_path_format,
-                "app/src/main/assets/" + STAR_PHOTO_ASSET_DIR,
-                getStarPhotoDirectory().getAbsolutePath()));
     }
 
     private File getStarPhotoDirectory() {
@@ -432,7 +413,6 @@ public class HomeFragment extends Fragment {
         int copied = copyUrisToLocalStarFolder(uris);
         if (copied > 0) {
             Toast.makeText(requireContext(), getString(R.string.home_star_upload_success_format, copied), Toast.LENGTH_SHORT).show();
-            bindStarFolderPath();
             setupStarBanner();
         } else {
             Toast.makeText(requireContext(), getString(R.string.home_star_upload_failed), Toast.LENGTH_SHORT).show();
