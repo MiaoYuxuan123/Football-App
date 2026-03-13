@@ -13,12 +13,14 @@ import com.example.football.ui.main.fragments.BadgeHallFragment;
 import com.example.football.ui.main.fragments.HomeFragment;
 import com.example.football.ui.main.fragments.MilestoneFragment;
 import com.example.football.ui.main.fragments.MineFragment;
+import com.example.football.ui.main.fragments.PlayerGrowthFragment;
 import com.example.football.ui.main.fragments.TrainFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG_HOME = "tab_home";
+    private static final String TAG_PLAYER_GROWTH = "tab_player_growth";
     private static final String TAG_TRAIN = "tab_train";
     private static final String TAG_MILESTONE = "tab_milestone";
     private static final String TAG_MINE = "tab_mine";
@@ -29,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
     private Fragment trainFragment;
     private Fragment milestoneFragment;
     private Fragment mineFragment;
+    private Fragment playerGrowthFragment;
     private String currentTag = TAG_HOME;
     private BottomNavigationView bottomNav;
 
@@ -45,6 +48,9 @@ public class MainActivity extends AppCompatActivity {
             if (itemId == R.id.nav_home) {
                 switchTo(TAG_HOME);
                 return true;
+            } else if (itemId == R.id.nav_player_growth) {
+                switchTo(TAG_PLAYER_GROWTH);
+                return true;
             } else if (itemId == R.id.nav_train) {
                 switchTo(TAG_TRAIN);
                 return true;
@@ -58,7 +64,9 @@ public class MainActivity extends AppCompatActivity {
             return false;
         });
 
-        if (TAG_TRAIN.equals(currentTag)) {
+        if (TAG_PLAYER_GROWTH.equals(currentTag)) {
+            bottomNav.setSelectedItemId(R.id.nav_player_growth);
+        } else if (TAG_TRAIN.equals(currentTag)) {
             bottomNav.setSelectedItemId(R.id.nav_train);
         } else if (TAG_MILESTONE.equals(currentTag)) {
             bottomNav.setSelectedItemId(R.id.nav_milestone);
@@ -72,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
     private void initFragments(Bundle savedInstanceState) {
         if (savedInstanceState == null) {
             homeFragment = new HomeFragment();
+            playerGrowthFragment = new PlayerGrowthFragment();
             trainFragment = new TrainFragment();
             milestoneFragment = new MilestoneFragment();
             mineFragment = new MineFragment();
@@ -79,6 +88,8 @@ public class MainActivity extends AppCompatActivity {
             getSupportFragmentManager()
                     .beginTransaction()
                     .add(R.id.fragment_container, homeFragment, TAG_HOME)
+                    .add(R.id.fragment_container, playerGrowthFragment, TAG_PLAYER_GROWTH)
+                    .hide(playerGrowthFragment)
                     .add(R.id.fragment_container, trainFragment, TAG_TRAIN)
                     .hide(trainFragment)
                     .add(R.id.fragment_container, milestoneFragment, TAG_MILESTONE)
@@ -91,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         homeFragment = requireFragment(TAG_HOME, new HomeFragment());
+        playerGrowthFragment = requireFragment(TAG_PLAYER_GROWTH, new PlayerGrowthFragment());
         trainFragment = requireFragment(TAG_TRAIN, new TrainFragment());
         milestoneFragment = requireFragment(TAG_MILESTONE, new MilestoneFragment());
         mineFragment = requireFragment(TAG_MINE, new MineFragment());
@@ -214,6 +226,9 @@ public class MainActivity extends AppCompatActivity {
         }
         if (TAG_TRAIN.equals(tag)) {
             return trainFragment;
+        }
+        if (TAG_PLAYER_GROWTH.equals(tag)) {
+            return playerGrowthFragment;
         }
         if (TAG_MILESTONE.equals(tag)) {
             return milestoneFragment;
