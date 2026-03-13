@@ -1,5 +1,6 @@
 package com.example.football.ui.train;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -181,6 +182,7 @@ public class TrainRecordsActivity extends AppCompatActivity {
     private View buildRecordItem(String record, int index, boolean selected) {
         View row = LayoutInflater.from(this).inflate(R.layout.item_train_record, layoutRecordsContainer, false);
         TextView tv = row.findViewById(R.id.tv_record_content);
+        TextView btnShare = row.findViewById(R.id.tv_record_share);
         TextView btnDelete = row.findViewById(R.id.tv_record_delete);
 
         tv.setText(record);
@@ -194,6 +196,7 @@ public class TrainRecordsActivity extends AppCompatActivity {
 
         tv.setOnClickListener(previewClick);
         row.setOnClickListener(previewClick);
+        btnShare.setOnClickListener(v -> shareRecord(record));
         btnDelete.setOnClickListener(v -> deleteRecordAt(index));
         return row;
     }
@@ -412,6 +415,27 @@ public class TrainRecordsActivity extends AppCompatActivity {
         persistRecords();
         loadRecords();
         Toast.makeText(this, getString(R.string.train_record_deleted), Toast.LENGTH_SHORT).show();
+    }
+
+    private void shareRecord(String record) {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, buildShareText(record));
+        startActivity(Intent.createChooser(shareIntent, getString(R.string.train_record_share_chooser)));
+    }
+
+    private String buildShareText(String record) {
+        ParsedRecord parsed = parseRecord(record);
+        String timeText = TextUtils.isEmpty(parsed.time) ? getString(R.string.train_record_share_default_time) : parsed.time;
+        String modeText = TextUtils.isEmpty(parsed.mode) ? getString(R.string.train_record_share_default_mode) : parsed.mode;
+        return getString(
+                R.string.train_record_share_text,
+                timeText,
+                modeText,
+                parsed.count,
+                parsed.avgScore,
+                parsed.raw
+        );
     }
 
     private void persistRecords() {

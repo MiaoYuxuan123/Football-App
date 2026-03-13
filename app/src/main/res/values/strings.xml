@@ -149,6 +149,17 @@
     <string name="home_star_asset_subtitle">项目内置照片轮播</string>
 
     <string name="train_record_delete">删除</string>
+    <string name="train_record_share">分享</string>
+    <string name="train_record_share_chooser">分享训练记录</string>
+    <string name="train_record_share_default_time">最近一次</string>
+    <string name="train_record_share_default_mode">训练</string>
+    <string name="train_record_share_text">我的训练记录
+时间：%1$s
+模式：%2$s
+次数：%3$d
+平均分：%4$d
+
+原始记录：%5$s</string>
     <string name="train_record_deleted">该条训练记录已删除</string>
     <string name="train_record_no_video">该记录没有可播放视频</string>
     <string name="train_record_video_missing">视频文件不存在或已删除</string>
@@ -162,6 +173,15 @@
     <string name="home_efficiency_matrix_title">EFFICIENCY MATRIX</string>
     <string name="home_daily_hyper_focus_title">Daily Hyper-Focus</string>
     <string name="home_global_pulse_title">Global Pulse</string>
+
+    <string name="splash_chip">SYSTEM ONLINE</string>
+    <string name="splash_brand">STRIKER AI</string>
+    <string name="splash_title">足智多谋</string>
+    <string name="splash_subtitle">让每次训练更科学、更有趣，准备进入你的 AI 球场。</string>
+    <string name="splash_loading">正在加载训练空间…</string>
+    <string name="splash_logo_content_description">足球启动图标</string>
+    <string name="splash_percent_format">%1$d%%</string>
+    <string name="splash_percent_zero">0%%</string>
 
     <string name="milestone_new_title">我的里程碑</string>
     <string name="milestone_header_level_format">等级 %1$d</string>
