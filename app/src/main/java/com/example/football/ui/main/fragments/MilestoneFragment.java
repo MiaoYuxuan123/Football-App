@@ -33,6 +33,8 @@ public class MilestoneFragment extends Fragment {
     private TextView tvTechnicalTitle;
     private TextView tvLevelBadge;
     private CircularProgressIndicator progressMilestone;
+    private CircularProgressIndicator progressOrbitTop;
+    private CircularProgressIndicator progressOrbitBottom;
     private TextView tvProgressPercent;
     private TextView tvProgressLabel;
     private TextView tvExperience;
@@ -97,6 +99,8 @@ public class MilestoneFragment extends Fragment {
         tvTechnicalTitle = view.findViewById(R.id.tvTechnicalTitle);
         tvLevelBadge = view.findViewById(R.id.tvLevelBadge);
         progressMilestone = view.findViewById(R.id.progressMilestone);
+        progressOrbitTop = view.findViewById(R.id.progressOrbitTop);
+        progressOrbitBottom = view.findViewById(R.id.progressOrbitBottom);
         tvProgressPercent = view.findViewById(R.id.tvProgressPercent);
         tvProgressLabel = view.findViewById(R.id.tvProgressLabel);
         tvExperience = view.findViewById(R.id.tvExperience);
@@ -137,6 +141,13 @@ public class MilestoneFragment extends Fragment {
             String modeKey = resolveWeakModeKey();
             ((MainActivity) requireActivity()).openTrainTab(modeKey);
         });
+
+        tvBadges.setOnClickListener(v -> {
+            if (!isAdded()) {
+                return;
+            }
+            ((MainActivity) requireActivity()).openBadgeHall();
+        });
     }
 
     private void loadAndShowData() {
@@ -157,6 +168,12 @@ public class MilestoneFragment extends Fragment {
         int progress = Math.max(0, Math.min(100,
                 Math.round(data.experience * 100f / Math.max(1, data.experienceToNext))));
         progressMilestone.setProgress(progress);
+        if (progressOrbitTop != null) {
+            progressOrbitTop.setProgress(progress);
+        }
+        if (progressOrbitBottom != null) {
+            progressOrbitBottom.setProgress(progress);
+        }
         tvProgressPercent.setText(getString(R.string.milestone_percent_format, progress));
         tvProgressLabel.setText(getString(R.string.milestone_progress_label));
 

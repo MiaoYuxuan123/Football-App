@@ -226,4 +226,10 @@
     <string name="milestone_goal_preview">射门专家</string>
     <string name="milestone_goal_format">%1$s专家 · 还差 %2$d 次冲级（累计%3$d次）</string>
     <string name="milestone_start">开始</string>
+
+    <string name="badge_hall_back">返回</string>
+    <string name="badge_hall_title">勋章展示厅</string>
+    <string name="badge_hall_subtitle">已解锁勋章会以彩色发光展示，未解锁勋章以灰色显示。继续训练，逐个点亮你的荣誉墙。</string>
+    <string name="badge_hall_status_unlocked">UNLOCKED</string>
+    <string name="badge_hall_status_locked">LOCKED</string>
 </resources>
