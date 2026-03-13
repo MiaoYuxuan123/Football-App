@@ -182,4 +182,48 @@
     <string name="splash_logo_content_description">足球启动图标</string>
     <string name="splash_percent_format">%1$d%%</string>
     <string name="splash_percent_zero">0%%</string>
+
+    <string name="milestone_new_title">我的里程碑</string>
+    <string name="milestone_header_level_format">等级 %1$d</string>
+    <string name="milestone_percent_format">%1$d%%</string>
+    <string name="milestone_progress_label">总目标</string>
+    <string name="milestone_month_hours_format">本月您已完成 %1$d 小时训练。</string>
+    <string name="milestone_experience_detail_format">经验 %1$d / %2$d · 单次训练 +%3$d XP</string>
+
+    <string name="milestone_badge_hall">勋章馆</string>
+    <string name="milestone_badge_preview">查看全部</string>
+    <string name="milestone_badge_card_1">射门大师</string>
+    <string name="milestone_badge_card_2">传球专家</string>
+    <string name="milestone_badge_card_3">运球精灵</string>
+    <string name="milestone_badge_unlocked_prefix">已解锁</string>
+    <string name="milestone_badge_locked_prefix">待解锁</string>
+    <string name="milestone_badge_line_format">%1$s\n%2$s</string>
+
+    <string name="milestone_star_compare_title">球星能力对比</string>
+    <string name="milestone_star_compare_subtitle">你正在接近顶级水平</string>
+    <string name="milestone_star_compare_subtitle_format">累计训练 %1$d 次 · 当前均分 %2$d</string>
+    <string name="milestone_star_name_default">里奥·梅西</string>
+    <string name="milestone_star_hint">顶级模板对比</string>
+    <string name="milestone_gap_preview">差距 -15%%</string>
+    <string name="milestone_gap_format">差距 %+d%%</string>
+    <string name="milestone_metric_shoot">射门 (Shooting)</string>
+    <string name="milestone_metric_pass">传球 (Passing)</string>
+    <string name="milestone_metric_dribble">运球 (Dribbling)</string>
+    <string name="milestone_metric_line_format">%1$s  你%2$d%%  %3$s%4$d%%</string>
+
+    <string name="milestone_future_title">未来能力预测</string>
+    <string name="milestone_timeline_title_1">1 个月后预期</string>
+    <string name="milestone_timeline_title_2">3 个月后预期</string>
+    <string name="milestone_timeline_title_3">1 年后预期（迈向专业）</string>
+    <string name="milestone_timeline_body_1">基础突破：动作衔接更流畅，射门力量感初显。</string>
+    <string name="milestone_timeline_body_2">质变突破：传球精度大幅提升，运球节奏感增强。</string>
+    <string name="milestone_timeline_body_3">迈向专业：形成肌肉记忆，能够在高强度对抗中精准发挥。</string>
+    <string name="milestone_timeline_body_format_1">基础突破：射门 +%1$d%% · 传球 +%2$d%% · 运球 +%3$d%%</string>
+    <string name="milestone_timeline_body_format_2">质变突破：射门 +%1$d%% · 传球 +%2$d%% · 运球 +%3$d%%</string>
+    <string name="milestone_timeline_body_format_3">年度目标：综合能力 A+ 段（预计提升 +%1$d%%）</string>
+
+    <string name="milestone_goal_label">下一个目标</string>
+    <string name="milestone_goal_preview">射门专家</string>
+    <string name="milestone_goal_format">%1$s专家 · 还差 %2$d 次冲级（累计%3$d次）</string>
+    <string name="milestone_start">开始</string>
 </resources>
