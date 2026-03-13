@@ -1,5 +1,48 @@
 <resources>
     <string name="app_name">Football</string>
+    <string name="nav_home">首页</string>
+    <string name="nav_player_growth">球员养成</string>
+    <string name="nav_train">训练</string>
+    <string name="nav_milestone">里程碑</string>
+    <string name="nav_mine">我的</string>
+
+    <string name="pg_brand">VIRTUAL STAR</string>
+    <string name="pg_subtitle">ELITE PERFORMANCE LAB</string>
+    <string name="pg_profile_title">PLAYER PROFILE</string>
+    <string name="pg_elite_chip">ELITE</string>
+    <string name="pg_level_role_format">Level %1$d | %2$s</string>
+    <string name="pg_rank_label">GLOBAL RANK</string>
+    <string name="pg_rank_format">#%1$,d</string>
+    <string name="pg_xp_left_format">XP: %1$d</string>
+    <string name="pg_xp_right_format">NEXT: %1$d</string>
+    <string name="pg_milestone_title">MILESTONE TIMELINE</string>
+    <string name="pg_milestone_1">✓ Pro Debut · 已解锁</string>
+    <string name="pg_milestone_2_unlocked">✓ Curve Master · 已解锁</string>
+    <string name="pg_milestone_2_locked">○ Curve Master · 训练 6 次解锁</string>
+    <string name="pg_milestone_3_unlocked">★ Elite Finisher · 已解锁</string>
+    <string name="pg_milestone_3_locked">○ Elite Finisher · 训练 12 次解锁</string>
+    <string name="pg_live_title">LIVE 3D RENDERING</string>
+    <string name="pg_replay">REPLAY MOTION</string>
+    <string name="pg_capture">CAPTURE DATA</string>
+    <string name="pg_joint_label">JOINT MOBILITY</string>
+    <string name="pg_sprint_label">SPRINT ANGLE</string>
+    <string name="pg_joint_value_format">%1$d pts</string>
+    <string name="pg_sprint_value_format">%1$d deg</string>
+    <string name="pg_performance_title">PERFORMANCE MATRIX</string>
+    <string name="pg_attr_power">Power</string>
+    <string name="pg_attr_accuracy">Accuracy</string>
+    <string name="pg_attr_technique">Technique</string>
+    <string name="pg_attr_agility">Agility</string>
+    <string name="pg_pro_compare_title">PRO COMPARISON</string>
+    <string name="pg_pro_target">L. MESSI · TARGET STYLE</string>
+    <string name="pg_role_elite">Elite Striker</string>
+    <string name="pg_role_core">Core Starter</string>
+    <string name="pg_role_rookie">Rookie Builder</string>
+    <string name="pg_gain_overview_format">本次训练加点：力量 +%1$d  准度 +%2$d  技巧 +%3$d  敏捷 +%4$d</string>
+    <string name="pg_mapping_note_format">机制映射：关节活动度 = 盘带能力（当前 %1$d），冲刺角度 = 速度能力（当前 %2$d）。你的身体就是游戏手柄，每次真实训练都会转化为虚拟人物属性成长。</string>
+    <string name="pg_replay_hint">回放模块开发中，已记录本次动作数据</string>
+    <string name="pg_capture_hint">数据采集中，训练结束会自动结算属性加点</string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 

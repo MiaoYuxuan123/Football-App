@@ -4,20 +4,29 @@
     <item
         android:id="@+id/nav_home"
         android:icon="@drawable/ic_baseline_home_24"
-        android:title="首页"/>
+        android:title="@string/nav_home"/>
+
+    <!-- 球员养成 -->
+    <item
+        android:id="@+id/nav_player_growth"
+        android:icon="@drawable/ic_baseline_groups_24"
+        android:title="@string/nav_player_growth"/>
+
     <!-- 训练 -->
     <item
         android:id="@+id/nav_train"
         android:icon="@drawable/ic_baseline_sports_soccer_24"
-        android:title="训练"/>
+        android:title="@string/nav_train"/>
+
     <!-- 里程碑 -->
     <item
         android:id="@+id/nav_milestone"
         android:icon="@drawable/ic_baseline_grade_24"
-        android:title="里程碑"/>
+        android:title="@string/nav_milestone"/>
+
     <!-- 我的 -->
     <item
         android:id="@+id/nav_mine"
         android:icon="@drawable/ic_baseline_person_24"
-        android:title="我的"/>
+        android:title="@string/nav_mine"/>
 </menu>

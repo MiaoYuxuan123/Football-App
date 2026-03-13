@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Player Growth Live 3D</title>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 20%, #2c2c2c 0%, #101010 65%, #050505 100%);
+      font-family: Arial, sans-serif;
+    }
+
+    model-viewer {
+      width: 100%;
+      height: 100%;
+      --progress-bar-color: #ff6a00;
+      --poster-color: #101010;
+      background: transparent;
+    }
+
+    #hint {
+      position: absolute;
+      left: 10px;
+      bottom: 10px;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 11px;
+      letter-spacing: 0.2px;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 10px;
+      padding: 6px 9px;
+      z-index: 2;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <model-viewer
+    id="playerModel"
+    src="file:///android_asset/models/player.glb"
+    camera-controls
+    touch-action="pan-y"
+    interaction-prompt="none"
+    auto-rotate
+    auto-rotate-delay="0"
+    rotation-per-second="25deg"
+    camera-orbit="0deg 75deg 2.1m"
+    min-camera-orbit="auto auto 1.3m"
+    max-camera-orbit="auto auto 3.2m"
+    shadow-intensity="1"
+    exposure="1"
+    environment-image="neutral"
+    ar-status="not-presenting">
+  </model-viewer>
+
+  <div id="hint">Drag to rotate player model</div>
+
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <script>
+    (function () {
+      const model = document.getElementById('playerModel');
+      model.addEventListener('error', function () {
+        // Fallback: keep feature runnable when local player.glb is not provided yet.
+        model.setAttribute('src', 'https://modelviewer.dev/shared-assets/models/Astronaut.glb');
+      }, { once: true });
+    })();
+  </script>
+</body>
+</html>
+

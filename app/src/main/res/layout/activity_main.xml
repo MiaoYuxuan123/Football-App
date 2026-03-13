@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="#050505">
 
-    <!-- Fragment容器：显示4个Tab的内容 -->
+    <!-- Fragment容器：显示5个Tab的内容 -->
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
