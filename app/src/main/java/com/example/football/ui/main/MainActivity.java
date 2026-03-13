@@ -6,8 +6,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
 import com.example.football.R;
+import com.example.football.ui.main.fragments.BadgeHallFragment;
 import com.example.football.ui.main.fragments.HomeFragment;
 import com.example.football.ui.main.fragments.MilestoneFragment;
 import com.example.football.ui.main.fragments.MineFragment;
@@ -20,6 +22,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG_TRAIN = "tab_train";
     private static final String TAG_MILESTONE = "tab_milestone";
     private static final String TAG_MINE = "tab_mine";
+    private static final String TAG_BADGE_HALL = "badge_hall";
     private static final String KEY_CURRENT_TAG = "main_current_tag";
 
     private Fragment homeFragment;
@@ -101,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void switchTo(@NonNull String targetTag) {
+        dismissBadgeHallIfVisible();
         if (targetTag.equals(currentTag)) {
             return;
         }
@@ -172,6 +176,35 @@ public class MainActivity extends AppCompatActivity {
             bottomNav.setSelectedItemId(R.id.nav_train);
         } else {
             switchTo(TAG_TRAIN);
+        }
+    }
+
+    public void openBadgeHall() {
+        if (bottomNav != null) {
+            bottomNav.setSelectedItemId(R.id.nav_milestone);
+        }
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        Fragment existed = fragmentManager.findFragmentByTag(TAG_BADGE_HALL);
+        if (existed != null && existed.isAdded()) {
+            return;
+        }
+
+        Fragment current = getFragmentByTag(currentTag);
+        androidx.fragment.app.FragmentTransaction transaction = fragmentManager.beginTransaction();
+        if (current != null && current.isAdded()) {
+            transaction.hide(current);
+        }
+        transaction
+                .add(R.id.fragment_container, new BadgeHallFragment(), TAG_BADGE_HALL)
+                .addToBackStack(TAG_BADGE_HALL)
+                .commit();
+    }
+
+    private void dismissBadgeHallIfVisible() {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        Fragment badgeHall = fragmentManager.findFragmentByTag(TAG_BADGE_HALL);
+        if (badgeHall != null && badgeHall.isAdded()) {
+            fragmentManager.popBackStack(TAG_BADGE_HALL, FragmentManager.POP_BACK_STACK_INCLUSIVE);
         }
     }
 
