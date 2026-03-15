@@ -18,16 +18,16 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.football.R;
+import com.example.football.data.AppRepository;
+import com.example.football.data.RepositoryProvider;
 import com.example.football.database.MilestoneDbHelper;
 import com.example.football.database.entity.MilestoneData;
-import com.example.football.utils.SPUtils;
+import com.example.football.database.entity.TrainRecord;
 
+import java.util.List;
 import java.util.Locale;
 
 public class PlayerGrowthFragment extends Fragment {
-
-    private static final String LEGACY_RECORDS_KEY = "train_records";
-    private static final String RECORDS_KEY_PREFIX = "train_records_";
 
     private WebView wvLiveModel;
     private TextView tvName;
@@ -50,6 +50,7 @@ public class PlayerGrowthFragment extends Fragment {
     private ProgressBar pbAccuracy;
     private ProgressBar pbTechnique;
     private ProgressBar pbAgility;
+    private AppRepository repository;
 
     @Nullable
     @Override
@@ -57,6 +58,7 @@ public class PlayerGrowthFragment extends Fragment {
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_player_growth, container, false);
+        repository = RepositoryProvider.get(requireContext());
         bindViews(view);
         bindActions(view);
         return view;
@@ -73,8 +75,6 @@ public class PlayerGrowthFragment extends Fragment {
         if (wvLiveModel != null) {
             wvLiveModel.loadUrl("about:blank");
             wvLiveModel.stopLoading();
-            wvLiveModel.setWebChromeClient(null);
-            wvLiveModel.setWebViewClient(null);
             wvLiveModel.destroy();
             wvLiveModel = null;
         }
@@ -116,10 +116,9 @@ public class PlayerGrowthFragment extends Fragment {
         if (!isAdded()) {
             return;
         }
-        String account = SPUtils.getString(requireContext(), "account", "default");
-        MilestoneDbHelper db = MilestoneDbHelper.getInstance(requireContext());
-        MilestoneData milestone = db.getOrCreate(account);
-        MilestoneDbHelper.TrainingSummary summary = db.getTrainingSummary(account);
+        String account = repository.getCurrentAccount();
+        MilestoneData milestone = repository.getMilestone(account);
+        MilestoneDbHelper.TrainingSummary summary = repository.getTrainingSummary(account);
         ParsedTrainingRecord latestRecord = parseLatestRecord(account);
         AttributeSnapshot snapshot = buildSnapshot(summary, latestRecord);
 
@@ -194,31 +193,35 @@ public class PlayerGrowthFragment extends Fragment {
 
 
     private ParsedTrainingRecord parseLatestRecord(@NonNull String account) {
-        String raw = SPUtils.getString(requireContext(), RECORDS_KEY_PREFIX + account, "");
-        if (TextUtils.isEmpty(raw)) {
-            raw = SPUtils.getString(requireContext(), LEGACY_RECORDS_KEY, "");
-        }
-        if (TextUtils.isEmpty(raw)) {
+        List<TrainRecord> records = repository.getTrainRecordList(account);
+        if (records == null || records.isEmpty()) {
             return new ParsedTrainingRecord();
         }
 
-        String firstLine = raw.split("\\n")[0];
+        TrainRecord latest = records.get(0);
         ParsedTrainingRecord parsed = new ParsedTrainingRecord();
-        String[] parts = firstLine.split("\\|");
-        for (String rawPart : parts) {
-            String part = rawPart == null ? "" : rawPart.trim();
-            if (part.startsWith("次数:")) {
-                parsed.count = safeParseInt(part.substring(3));
-            } else if (part.startsWith("均分:")) {
-                parsed.avgScore = safeParseInt(part.substring(3));
-            } else if (part.contains(getString(R.string.train_mode_shoot))
-                    || part.contains(getString(R.string.train_mode_dribble))
-                    || part.contains(getString(R.string.train_mode_pass))) {
-                parsed.mode = part;
+        parsed.mode = safeString(latest.mode);
+        parsed.count = latest.actionCount;
+        parsed.avgScore = latest.avgScore;
+
+        if ((parsed.count <= 0 && parsed.avgScore <= 0) || TextUtils.isEmpty(parsed.mode)) {
+            TrainRecord fallback = TrainRecord.fromRawText(latest.rawText);
+            if (parsed.count <= 0) {
+                parsed.count = fallback.actionCount;
+            }
+            if (parsed.avgScore <= 0) {
+                parsed.avgScore = fallback.avgScore;
+            }
+            if (TextUtils.isEmpty(parsed.mode)) {
+                parsed.mode = safeString(fallback.mode);
             }
         }
         parsed.valid = parsed.avgScore > 0 || parsed.count > 0;
         return parsed;
+    }
+
+    private String safeString(@Nullable String value) {
+        return value == null ? "" : value.trim();
     }
 
     private int safeParseInt(@Nullable String value) {

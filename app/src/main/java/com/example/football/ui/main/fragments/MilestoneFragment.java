@@ -16,12 +16,12 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.football.R;
+import com.example.football.data.AppRepository;
+import com.example.football.data.RepositoryProvider;
 import com.example.football.database.MilestoneDbHelper;
 import com.example.football.database.entity.MilestoneData;
 import com.example.football.ui.main.MainActivity;
 import com.example.football.ui.main.views.DonutProgressView;
-import com.example.football.utils.SPUtils;
-import com.google.android.material.progressindicator.CircularProgressIndicator;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -32,7 +32,7 @@ import java.util.List;
 public class MilestoneFragment extends Fragment {
 
     private MilestoneData data;
-    private MilestoneDbHelper dbHelper;
+    private AppRepository repository;
 
     private TextView tvLevel;
     private TextView tvTechnicalTitle;
@@ -85,7 +85,7 @@ public class MilestoneFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        dbHelper = MilestoneDbHelper.getInstance(requireContext());
+        repository = RepositoryProvider.get(requireContext());
         initViews(view);
         bindListeners();
         loadAndShowData();
@@ -152,8 +152,8 @@ public class MilestoneFragment extends Fragment {
     }
 
     private void loadAndShowData() {
-        String account = SPUtils.getString(requireContext(), "account", "default");
-        data = dbHelper.getOrCreate(account);
+        String account = repository.getCurrentAccount();
+        data = repository.getMilestone(account);
         bindHeaderAndProgress();
         bindBadges();
         bindStarComparison();
@@ -178,7 +178,7 @@ public class MilestoneFragment extends Fragment {
         tvExperience.setText(getString(R.string.milestone_experience_detail_format,
                 data.experience, data.experienceToNext, data.xpPerTraining));
 
-        MilestoneDbHelper.TrainingSummary summary = dbHelper.getTrainingSummary(data.account);
+        MilestoneDbHelper.TrainingSummary summary = repository.getTrainingSummary(data.account);
         tvTrainCount.setText(getString(R.string.milestone_star_compare_subtitle_format,
                 summary.totalCount, summary.avgScore));
     }
@@ -258,7 +258,7 @@ public class MilestoneFragment extends Fragment {
     }
 
     private void bindFuturePrediction() {
-        MilestoneDbHelper.TrainingSummary summary = dbHelper.getTrainingSummary(data.account);
+        MilestoneDbHelper.TrainingSummary summary = repository.getTrainingSummary(data.account);
         int avgScore = Math.max(50, summary.avgScore == 0 ? 70 : summary.avgScore);
 
         int boost1 = Math.max(3, (80 - avgScore) / 6 + 4);
@@ -276,7 +276,7 @@ public class MilestoneFragment extends Fragment {
 
     private void bindGoal() {
         String weakMode = resolveWeakModeLabel();
-        MilestoneDbHelper.TrainingSummary summary = dbHelper.getTrainingSummary(data.account);
+        MilestoneDbHelper.TrainingSummary summary = repository.getTrainingSummary(data.account);
         int remain = Math.max(1, (data.experienceToNext - data.experience + Math.max(1, data.xpPerTraining) - 1)
                 / Math.max(1, data.xpPerTraining));
         tvGoalText.setText(getString(R.string.milestone_goal_format, weakMode, remain, summary.totalCount));

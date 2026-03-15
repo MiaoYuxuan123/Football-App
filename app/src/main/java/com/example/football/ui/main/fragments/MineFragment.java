@@ -19,9 +19,10 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.fragment.app.Fragment;
 
 import com.example.football.R;
+import com.example.football.data.AppRepository;
+import com.example.football.data.RepositoryProvider;
 import com.example.football.ui.login.LoginActivity;
 import com.example.football.ui.train.TrainRecordsActivity;
-import com.example.football.utils.SPUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -32,6 +33,7 @@ public class MineFragment extends Fragment {
     private ImageView ivAvatar;
     private String avatarSpKey = "avatar_path_default";
     private String currentAccount = "default";
+    private AppRepository repository;
 
     private final ActivityResultLauncher<String> avatarPickerLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
@@ -46,10 +48,12 @@ public class MineFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_mine, container, false);
 
+        repository = RepositoryProvider.get(requireContext());
+
         TextView tvAccount = view.findViewById(R.id.tv_account);
-        String account = SPUtils.getString(requireActivity(), "account", "");
+        String account = repository.getCurrentAccount();
         currentAccount = TextUtils.isEmpty(account) ? "default" : account;
-        tvAccount.setText(TextUtils.isEmpty(account) ? "未登录用户" : account);
+        tvAccount.setText(TextUtils.isEmpty(account) || "default".equals(account) ? "未登录用户" : account);
 
         ivAvatar = view.findViewById(R.id.iv_avatar);
         setupAvatarStyle();
@@ -70,7 +74,7 @@ public class MineFragment extends Fragment {
         });
 
         view.findViewById(R.id.btn_logout).setOnClickListener(v -> {
-            SPUtils.putBoolean(requireActivity(), "isLogin", false);
+            repository.logout();
             Intent intent = new Intent(requireActivity(), LoginActivity.class);
             startActivity(intent);
             requireActivity().finish();
@@ -116,7 +120,7 @@ public class MineFragment extends Fragment {
             while ((len = in.read(buffer)) != -1) {
                 out.write(buffer, 0, len);
             }
-            SPUtils.putString(requireContext(), avatarSpKey, target.getAbsolutePath());
+            repository.setAvatarPath(currentAccount, target.getAbsolutePath());
         } catch (Exception e) {
             Toast.makeText(requireActivity(), "头像保存失败", Toast.LENGTH_SHORT).show();
         }
@@ -136,7 +140,7 @@ public class MineFragment extends Fragment {
     }
 
     private void loadAvatar() {
-        String path = SPUtils.getString(requireContext(), avatarSpKey, "");
+        String path = repository.getAvatarPath(currentAccount);
         if (!TextUtils.isEmpty(path) && new File(path).exists()) {
             ivAvatar.setImageBitmap(BitmapFactory.decodeFile(path));
         } else {

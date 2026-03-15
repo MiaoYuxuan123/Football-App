@@ -25,9 +25,10 @@ import androidx.fragment.app.Fragment;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.example.football.R;
+import com.example.football.data.AppRepository;
+import com.example.football.data.RepositoryProvider;
 import com.example.football.database.MilestoneDbHelper;
 import com.example.football.ui.main.MainActivity;
-import com.example.football.utils.SPUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -68,6 +69,7 @@ public class HomeFragment extends Fragment {
     private LinearLayout layoutHomeStarIndicator;
     private View btnHomeUploadStarPhotos;
     private HomeStarBannerAdapter homeStarBannerAdapter;
+    private AppRepository repository;
 
     private final Handler autoScrollHandler = new Handler(Looper.getMainLooper());
     private final Runnable autoScrollRunnable = () -> {
@@ -102,6 +104,8 @@ public class HomeFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
+
+        repository = RepositoryProvider.get(requireContext());
 
         tvHomeGreeting = view.findViewById(R.id.tv_home_greeting);
         tvHomeTodayStatus = view.findViewById(R.id.tv_home_today_status);
@@ -200,12 +204,11 @@ public class HomeFragment extends Fragment {
         if (!isAdded()) {
             return;
         }
-        String account = SPUtils.getString(requireContext(), "account", "default");
+        String account = repository.getCurrentAccount();
         String name = TextUtils.isEmpty(account) || "default".equals(account) ? getString(R.string.home_player_default) : account;
         tvHomeGreeting.setText(getString(R.string.home_greeting_format, name));
 
-        MilestoneDbHelper.TrainingSummary summary =
-                MilestoneDbHelper.getInstance(requireContext()).getTrainingSummary(account);
+        MilestoneDbHelper.TrainingSummary summary = repository.getTrainingSummary(account);
 
         tvHomeTotalCount.setText(getString(R.string.home_total_count_format, summary.totalCount));
         tvHomeModeBreakdown.setText(getString(

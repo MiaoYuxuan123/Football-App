@@ -13,10 +13,11 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.football.R;
+import com.example.football.data.AppRepository;
+import com.example.football.data.RepositoryProvider;
 import com.example.football.database.MilestoneDbHelper;
 import com.example.football.database.entity.MilestoneData;
 import com.example.football.ui.main.model.BadgeDisplayItem;
-import com.example.football.utils.SPUtils;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -28,7 +29,7 @@ import java.util.Set;
 
 public class BadgeHallFragment extends Fragment {
 
-    private MilestoneDbHelper dbHelper;
+    private AppRepository repository;
     private BadgeHallAdapter adapter;
 
     @Nullable
@@ -40,7 +41,7 @@ public class BadgeHallFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        dbHelper = MilestoneDbHelper.getInstance(requireContext());
+        repository = RepositoryProvider.get(requireContext());
 
         TextView btnBack = view.findViewById(R.id.btnBack);
         RecyclerView recyclerView = view.findViewById(R.id.recyclerBadges);
@@ -55,9 +56,9 @@ public class BadgeHallFragment extends Fragment {
     }
 
     private void bindBadges() {
-        String account = SPUtils.getString(requireContext(), "account", "default");
-        MilestoneData data = dbHelper.getOrCreate(account);
-        MilestoneDbHelper.TrainingSummary summary = dbHelper.getTrainingSummary(account);
+        String account = repository.getCurrentAccount();
+        MilestoneData data = repository.getMilestone(account);
+        MilestoneDbHelper.TrainingSummary summary = repository.getTrainingSummary(account);
 
         Set<String> unlockedFromSaved = parseUnlockedBadgeNames(data.badgesJson);
         int avgScore = summary.avgScore == 0 ? 70 : summary.avgScore;
@@ -108,4 +109,3 @@ public class BadgeHallFragment extends Fragment {
         boolean unlocked;
     }
 }
-

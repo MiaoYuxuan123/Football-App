@@ -8,10 +8,11 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.example.football.R;
+import com.example.football.data.AppRepository;
+import com.example.football.data.RepositoryProvider;
 import com.example.football.entity.user;
 import com.example.football.ui.main.MainActivity;
 import com.example.football.ui.login.RegisterActivity;
-import com.example.football.utils.SPUtils;
 import com.google.gson.Gson;
 
 import java.io.IOException;
@@ -26,12 +27,15 @@ public class LoginActivity extends AppCompatActivity {
     private EditText etPassword;  // 密码输入框
     private static final String GET_USER_URL = "http://10.0.2.2:8088/findoneuser";
     private final OkHttpClient okHttpClient = new OkHttpClient();
+    private AppRepository repository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // 绑定布局文件（关键！之前空白就是因为少了这行）
         setContentView(R.layout.activity_login);
+
+        repository = RepositoryProvider.get(this);
 
         // 初始化控件（把代码和布局里的控件绑定）
         initView();
@@ -102,8 +106,8 @@ public class LoginActivity extends AppCompatActivity {
                                     
                                     if (user != null && password.equals(user.getPassword())) {
                                         // 密码正确，登录成功
-                                        SPUtils.putBoolean(LoginActivity.this, "isLogin", true);
-                                        SPUtils.putString(LoginActivity.this, "account", account);
+                                        repository.setLoggedIn(true);
+                                        repository.setCurrentAccount(account);
 
                                         // 跳转到主页面
                                         Intent intent = new Intent(LoginActivity.this, MainActivity.class);

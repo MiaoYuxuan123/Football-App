@@ -1,6 +1,6 @@
 # Football Training Companion
 
-An Android 13+-ready training companion app that guides football lovers through workouts, scores their sessions with a CameraX-powered recognizer, and keeps every result (plus the supporting training video) neatly organized. The personal center doubles as a lightweight profile hub where you can swap avatars, review your progress, and export or replay practice clips.
+An Android 13+-ready training companion app that guides football lovers through workouts, scores their sessions with a CameraX-powered recognizer, and keeps every result (plus the supporting training video) neatly organized. The app now reads and writes user-facing state through a unified repository layer, while local SQLite tables keep progress and training history structured and easier to evolve.
 
 ## Feature Highlights
 
@@ -9,17 +9,28 @@ An Android 13+-ready training companion app that guides football lovers through 
 | **Onboarding** | Email/password login & registration with light validation and persistent session state. |
 | **Training** | CameraX preview + Recorder capture for drills (shooting, dribbling, passing), simulated scoring & coaching tips, one-tap record saving. |
 | **Video Replay** | ExoPlayer-based playback of every saved session, path validation, and helpful error prompts if a file goes missing. |
-| **History & Analytics** | Reverse-chronological training log stored locally via `SPUtils`, including timestamp, drill type, counts, and average score. |
+| **History & Analytics** | Reverse-chronological training log stored locally in SQLite, including timestamp, drill type, counts, average score, and optional video path. |
 | **Personal Center** | Account banner, per-user avatar stored in app-private storage, help dialog, logout, and the full training-record list with quick access to replays. |
 
 ## Screens & Flow
 
-1. **Splash & Login** → routes to `MainActivity` once `SPUtils.isLogin` is true.
+1. **Splash & Login** → routes to `MainActivity` once the repository reports an active session.
 2. **Home Tabs** (BottomNavigation):
    - *Train*: live preview, start/stop recognition, CameraX recording, per-mode stats, save action.
    - *Results*: historical cards (score, tips, navigation to detail screens).
    - *Mine*: combined profile + log view described above.
 3. **Playback** → `VideoPlayerActivity` opens with ExoPlayer/PlayerView, media controls, and file path hint.
+
+## Data Storage Overview
+
+| Data | Source / Storage | Access Path |
+| --- | --- | --- |
+| Login state, current account | `SharedPreferences` (`football_train`) | `AppRepository` → `AppRepositoryImpl` |
+| Milestone level / XP / badges / summaries | SQLite table `milestone` in `football_milestone.db` | `AppRepository` → `MilestoneDbHelper` |
+| Training records | SQLite table `train_record` in `football_milestone.db` | `AppRepository.getTrainRecordList(...)` |
+| Legacy training records | Old `SharedPreferences` keys (`train_records`, `train_records_{account}`) | Auto-migrated on first read |
+| Avatar images | App-private files directory | `AppRepository` stores the file path |
+| Training videos | App-specific external files directory | Saved by `TrainFragment`, referenced by record rows |
 
 ## Project Layout
 
@@ -27,10 +38,12 @@ An Android 13+-ready training companion app that guides football lovers through 
 Football/
 ├── app/
 │   ├── src/main/java/com/example/football/
+│   │   ├── data/...               # Unified repository entry points
+│   │   ├── database/...           # SQLite helpers + entities
 │   │   ├── ui/login/...           # Auth screens
 │   │   ├── ui/main/...            # Tab navigation + fragments
 │   │   ├── ui/train/...           # CameraX recognizer + video player
-│   │   └── utils/SPUtils.kt       # SharedPreferences helpers
+│   │   └── utils/SPUtils.java     # SharedPreferences helpers
 │   └── src/main/res/...           # Material 3 themed resources
 ├── gradle/                        # Wrapper + versions catalog
 └── README.md                      # 👈 You are here
@@ -71,8 +84,7 @@ Football/
 
 - **CameraX tuning**: adjust quality or enable audio inside `TrainFragment.startVideoRecording()`.
 - **Playback stability**: `VideoPlayerActivity` already uses ExoPlayer, so drop in analytics or DRM modules if needed.
-- **State storage**: `SPUtils` centralizes simple flags/strings; expand with Room if you need multi-user sync.
+- **State storage**: the UI should only talk to `AppRepository`; simple flags still use `SPUtils`, while progress and history live in SQLite.
 - **Testing**: `./gradlew testDebug` for JVM tests, `./gradlew connectedDebugAndroidTest` for instrumented runs.
 
 Happy training ⚽️
-

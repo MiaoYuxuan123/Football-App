@@ -38,10 +38,10 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.football.R;
-import com.example.football.database.MilestoneDbHelper;
+import com.example.football.data.AppRepository;
+import com.example.football.data.RepositoryProvider;
 import com.example.football.coach.CoachFeedbackManager;
 import com.example.football.ui.train.VideoPlayerActivity;
-import com.example.football.utils.SPUtils;
 import com.example.football.video.PoseVideoProcessor;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mediapipe.framework.image.MPImage;
@@ -105,9 +105,9 @@ public class TrainFragment extends Fragment {
     private long poseResultCount = 0L;
     private long poseEmptyCount = 0L;
     private long poseErrorCount = 0L;
+    private AppRepository repository;
 
     private static final String TAG = "TrainFragment";
-    private static final String SP_KEY_TRAIN_RECORDS = "train_records";
     private static final long REP_INTERVAL_MS = 900L;
 
     private String pendingVideoPath = "";
@@ -157,6 +157,7 @@ public class TrainFragment extends Fragment {
 
     private void initViews(View view) {
         previewView = view.findViewById(R.id.previewView);
+        repository = RepositoryProvider.get(requireContext());
         // Ensure overlay can be drawn above preview (SurfaceView mode may hide sibling views).
         previewView.setImplementationMode(PreviewView.ImplementationMode.COMPATIBLE);
         previewView.setScaleType(PreviewView.ScaleType.FILL_CENTER);
@@ -563,27 +564,11 @@ public class TrainFragment extends Fragment {
         String videoInfo = (!videoFinalizeDone || lastVideoPath.isEmpty()) ? "视频:无" : "视频:" + lastVideoPath;
         String record = time + " | " + currentMode + " | 次数:" + actionCount + " | 均分:" + avgScore + " | " + videoInfo;
 
-        String oldRecords = SPUtils.getString(requireContext(), SP_KEY_TRAIN_RECORDS, "");
-        String newRecords = record + (oldRecords.isEmpty() ? "" : "\n" + oldRecords);
-        SPUtils.putString(requireContext(), SP_KEY_TRAIN_RECORDS, newRecords);
-
-        updateMilestoneProgress(record, avgScore);
+        String account = repository.getCurrentAccount();
+        repository.prependTrainRecord(account, record);
+        repository.recordTrainingResult(account, currentMode, avgScore, actionCount);
     }
 
-    private void updateMilestoneProgress(String record, int avgScore) {
-        String account = SPUtils.getString(requireContext(), "account", "default");
-        String recordKey = getTrainRecordsKey(account);
-        String oldRecords = SPUtils.getString(requireContext(), recordKey, "");
-        String newRecords = record + (oldRecords.isEmpty() ? "" : "\n" + oldRecords);
-        SPUtils.putString(requireContext(), recordKey, newRecords);
-
-        MilestoneDbHelper.getInstance(requireContext())
-                .recordTrainingResult(account, currentMode, avgScore, actionCount);
-    }
-
-    private String getTrainRecordsKey(String account) {
-        return SP_KEY_TRAIN_RECORDS + "_" + account;
-    }
 
 
     private void setViewListeners() {
