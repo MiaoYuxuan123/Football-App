@@ -18,6 +18,7 @@ import androidx.fragment.app.Fragment;
 import com.example.football.R;
 import com.example.football.data.AppRepository;
 import com.example.football.data.RepositoryProvider;
+import com.example.football.data.TrainingRefreshNotifier;
 import com.example.football.database.MilestoneDbHelper;
 import com.example.football.database.entity.MilestoneData;
 import com.example.football.ui.main.MainActivity;
@@ -88,6 +89,7 @@ public class MilestoneFragment extends Fragment {
         repository = RepositoryProvider.get(requireContext());
         initViews(view);
         bindListeners();
+        observeTrainingRefresh();
         loadAndShowData();
     }
 
@@ -159,6 +161,17 @@ public class MilestoneFragment extends Fragment {
         bindStarComparison();
         bindFuturePrediction();
         bindGoal();
+    }
+
+    private void observeTrainingRefresh() {
+        TrainingRefreshNotifier.events().observe(getViewLifecycleOwner(), event -> {
+            if (event == null || repository == null) {
+                return;
+            }
+            if (event.matchesAccount(repository.getCurrentAccount()) && event.affectsOverview()) {
+                loadAndShowData();
+            }
+        });
     }
 
     private void bindHeaderAndProgress() {

@@ -81,4 +81,7 @@ dependencies {
 
     // ExoPlayer：用于更稳定的视频播放，替代 VideoView
     implementation("com.google.android.exoplayer:exoplayer:2.19.1")
+
+    // WebViewAssetLoader 所需依赖
+    implementation("androidx.webkit:webkit:1.11.0")
 }

@@ -95,6 +95,70 @@ public class MilestoneDbHelper extends SQLiteOpenHelper {
 
     public void update(MilestoneData data) {
         SQLiteDatabase db = getWritableDatabase();
+        update(db, data);
+    }
+
+    public void recordTrainingResult(String account, String mode, int avgScore, int actionCount) {
+        MilestoneData milestone = getOrCreate(account);
+        applyTrainingResult(milestone, mode, avgScore, actionCount);
+        update(milestone);
+    }
+
+    public void saveTrainingSessionAtomic(String account,
+                                          String mode,
+                                          int avgScore,
+                                          int actionCount,
+                                          TrainRecord record) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            MilestoneData milestone = find(db, account);
+            if (milestone == null) {
+                milestone = MilestoneData.createDefault(account);
+            }
+            applyTrainingResult(milestone, mode, avgScore, actionCount);
+            update(db, milestone);
+
+            db.execSQL("UPDATE " + TABLE_TRAIN_RECORD + " SET display_order = display_order + 1 WHERE account=?",
+                    new Object[]{account});
+            insertTrainRecord(db, account, record, 0);
+
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    private MilestoneData find(String account) {
+        SQLiteDatabase db = getReadableDatabase();
+        return find(db, account);
+    }
+
+    private MilestoneData find(SQLiteDatabase db, String account) {
+        try (Cursor c = db.query(TABLE, null, "account=?", new String[]{account}, null, null, null)) {
+            if (!c.moveToFirst()) {
+                return null;
+            }
+            MilestoneData d = new MilestoneData();
+            d.account = c.getString(c.getColumnIndexOrThrow("account"));
+            d.level = c.getInt(c.getColumnIndexOrThrow("level"));
+            d.technicalTitle = c.getString(c.getColumnIndexOrThrow("technical_title"));
+            d.experience = c.getInt(c.getColumnIndexOrThrow("experience"));
+            d.experienceToNext = c.getInt(c.getColumnIndexOrThrow("experience_to_next"));
+            d.xpPerTraining = c.getInt(c.getColumnIndexOrThrow("xp_per_training"));
+            d.trainCount = getIntOrDefault(c, "train_count");
+            d.shootCount = getIntOrDefault(c, "shoot_count");
+            d.dribbleCount = getIntOrDefault(c, "dribble_count");
+            d.passCount = getIntOrDefault(c, "pass_count");
+            d.badgesJson = c.getString(c.getColumnIndexOrThrow("badges_json"));
+            d.technicalScoresJson = c.getString(c.getColumnIndexOrThrow("technical_scores_json"));
+            d.radarScoresJson = c.getString(c.getColumnIndexOrThrow("radar_scores_json"));
+            d.selectedStarId = c.getInt(c.getColumnIndexOrThrow("selected_star_id"));
+            return d;
+        }
+    }
+
+    private void update(SQLiteDatabase db, MilestoneData data) {
         ContentValues cv = new ContentValues();
         cv.put("account", data.account);
         cv.put("level", data.level);
@@ -113,8 +177,7 @@ public class MilestoneDbHelper extends SQLiteOpenHelper {
         db.insertWithOnConflict(TABLE, null, cv, SQLiteDatabase.CONFLICT_REPLACE);
     }
 
-    public void recordTrainingResult(String account, String mode, int avgScore, int actionCount) {
-        MilestoneData milestone = getOrCreate(account);
+    private void applyTrainingResult(MilestoneData milestone, String mode, int avgScore, int actionCount) {
         milestone.trainCount += 1;
         if ("射门".equals(mode)) {
             milestone.shootCount += 1;
@@ -157,8 +220,6 @@ public class MilestoneDbHelper extends SQLiteOpenHelper {
         radar.add(clamp(base - 2f, 45f, 98f));
         radar.add(clamp(base, 45f, 99f));
         milestone.radarScoresJson = new Gson().toJson(radar);
-
-        update(milestone);
     }
 
     public TrainingSummary getTrainingSummary(String account) {
@@ -273,63 +334,6 @@ public class MilestoneDbHelper extends SQLiteOpenHelper {
         }
     }
 
-    private MilestoneData find(String account) {
-        SQLiteDatabase db = getReadableDatabase();
-        try (Cursor c = db.query(TABLE, null, "account=?", new String[]{account}, null, null, null)) {
-            if (!c.moveToFirst()) {
-                return null;
-            }
-            MilestoneData d = new MilestoneData();
-            d.account = c.getString(c.getColumnIndexOrThrow("account"));
-            d.level = c.getInt(c.getColumnIndexOrThrow("level"));
-            d.technicalTitle = c.getString(c.getColumnIndexOrThrow("technical_title"));
-            d.experience = c.getInt(c.getColumnIndexOrThrow("experience"));
-            d.experienceToNext = c.getInt(c.getColumnIndexOrThrow("experience_to_next"));
-            d.xpPerTraining = c.getInt(c.getColumnIndexOrThrow("xp_per_training"));
-            d.trainCount = getIntOrDefault(c, "train_count");
-            d.shootCount = getIntOrDefault(c, "shoot_count");
-            d.dribbleCount = getIntOrDefault(c, "dribble_count");
-            d.passCount = getIntOrDefault(c, "pass_count");
-            d.badgesJson = c.getString(c.getColumnIndexOrThrow("badges_json"));
-            d.technicalScoresJson = c.getString(c.getColumnIndexOrThrow("technical_scores_json"));
-            d.radarScoresJson = c.getString(c.getColumnIndexOrThrow("radar_scores_json"));
-            d.selectedStarId = c.getInt(c.getColumnIndexOrThrow("selected_star_id"));
-            return d;
-        }
-    }
-
-    private void createTrainRecordTable(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_TRAIN_RECORD + " ("
-                + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + "account TEXT NOT NULL,"
-                + "raw_text TEXT NOT NULL,"
-                + "display_order INTEGER NOT NULL DEFAULT 0,"
-                + "created_at TEXT,"
-                + "mode TEXT,"
-                + "action_count INTEGER NOT NULL DEFAULT 0,"
-                + "avg_score INTEGER NOT NULL DEFAULT 0,"
-                + "video_path TEXT"
-                + ")");
-        db.execSQL("CREATE INDEX IF NOT EXISTS idx_train_record_account_order ON "
-                + TABLE_TRAIN_RECORD + "(account, display_order)");
-    }
-
-    private void insertTrainRecord(SQLiteDatabase db, String account, TrainRecord record, int displayOrder) {
-        if (record == null || record.rawText == null || record.rawText.trim().isEmpty()) {
-            return;
-        }
-        ContentValues cv = new ContentValues();
-        cv.put("account", account);
-        cv.put("raw_text", record.rawText.trim());
-        cv.put("display_order", Math.max(0, displayOrder));
-        cv.put("created_at", record.createdAt);
-        cv.put("mode", record.mode);
-        cv.put("action_count", Math.max(0, record.actionCount));
-        cv.put("avg_score", Math.max(0, record.avgScore));
-        cv.put("video_path", record.videoPath);
-        db.insert(TABLE_TRAIN_RECORD, null, cv);
-    }
-
     private int getIntOrDefault(Cursor c, String column) {
         int idx = c.getColumnIndex(column);
         return idx >= 0 ? c.getInt(idx) : 0;
@@ -379,5 +383,37 @@ public class MilestoneDbHelper extends SQLiteOpenHelper {
 
     private float clamp(float value, float min, float max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    private void createTrainRecordTable(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_TRAIN_RECORD + " ("
+                + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "account TEXT NOT NULL,"
+                + "raw_text TEXT NOT NULL,"
+                + "display_order INTEGER NOT NULL DEFAULT 0,"
+                + "created_at TEXT,"
+                + "mode TEXT,"
+                + "action_count INTEGER NOT NULL DEFAULT 0,"
+                + "avg_score INTEGER NOT NULL DEFAULT 0,"
+                + "video_path TEXT"
+                + ")");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_train_record_account_order ON "
+                + TABLE_TRAIN_RECORD + "(account, display_order)");
+    }
+
+    private void insertTrainRecord(SQLiteDatabase db, String account, TrainRecord record, int displayOrder) {
+        if (record == null || record.rawText == null || record.rawText.trim().isEmpty()) {
+            return;
+        }
+        ContentValues cv = new ContentValues();
+        cv.put("account", account);
+        cv.put("raw_text", record.rawText.trim());
+        cv.put("display_order", Math.max(0, displayOrder));
+        cv.put("created_at", record.createdAt);
+        cv.put("mode", record.mode);
+        cv.put("action_count", Math.max(0, record.actionCount));
+        cv.put("avg_score", Math.max(0, record.avgScore));
+        cv.put("video_path", record.videoPath);
+        db.insert(TABLE_TRAIN_RECORD, null, cv);
     }
 }
