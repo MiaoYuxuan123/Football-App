@@ -6,38 +6,38 @@
     <string name="nav_milestone">里程碑</string>
     <string name="nav_mine">我的</string>
 
-    <string name="pg_brand">VIRTUAL STAR</string>
-    <string name="pg_subtitle">ELITE PERFORMANCE LAB</string>
-    <string name="pg_profile_title">PLAYER PROFILE</string>
-    <string name="pg_elite_chip">ELITE</string>
-    <string name="pg_level_role_format">Level %1$d | %2$s</string>
-    <string name="pg_rank_label">GLOBAL RANK</string>
+    <string name="pg_brand">虚拟球星</string>
+    <string name="pg_subtitle">精英训练实验室</string>
+    <string name="pg_profile_title">球员档案</string>
+    <string name="pg_elite_chip">精英</string>
+    <string name="pg_level_role_format">等级 %1$d | %2$s</string>
+    <string name="pg_rank_label">全服排名</string>
     <string name="pg_rank_format">#%1$,d</string>
-    <string name="pg_xp_left_format">XP: %1$d</string>
-    <string name="pg_xp_right_format">NEXT: %1$d</string>
-    <string name="pg_milestone_title">MILESTONE TIMELINE</string>
-    <string name="pg_milestone_1">✓ Pro Debut · 已解锁</string>
-    <string name="pg_milestone_2_unlocked">✓ Curve Master · 已解锁</string>
-    <string name="pg_milestone_2_locked">○ Curve Master · 训练 6 次解锁</string>
-    <string name="pg_milestone_3_unlocked">★ Elite Finisher · 已解锁</string>
-    <string name="pg_milestone_3_locked">○ Elite Finisher · 训练 12 次解锁</string>
-    <string name="pg_live_title">LIVE 3D RENDERING</string>
-    <string name="pg_replay">REPLAY MOTION</string>
-    <string name="pg_capture">CAPTURE DATA</string>
-    <string name="pg_joint_label">JOINT MOBILITY</string>
-    <string name="pg_sprint_label">SPRINT ANGLE</string>
-    <string name="pg_joint_value_format">%1$d pts</string>
-    <string name="pg_sprint_value_format">%1$d deg</string>
-    <string name="pg_performance_title">PERFORMANCE MATRIX</string>
-    <string name="pg_attr_power">Power</string>
-    <string name="pg_attr_accuracy">Accuracy</string>
-    <string name="pg_attr_technique">Technique</string>
-    <string name="pg_attr_agility">Agility</string>
-    <string name="pg_pro_compare_title">PRO COMPARISON</string>
-    <string name="pg_pro_target">L. MESSI · TARGET STYLE</string>
-    <string name="pg_role_elite">Elite Striker</string>
-    <string name="pg_role_core">Core Starter</string>
-    <string name="pg_role_rookie">Rookie Builder</string>
+    <string name="pg_xp_left_format">当前经验：%1$d</string>
+    <string name="pg_xp_right_format">升级所需：%1$d</string>
+    <string name="pg_milestone_title">成长里程碑</string>
+    <string name="pg_milestone_1">✓ 职业首秀 · 已解锁</string>
+    <string name="pg_milestone_2_unlocked">✓ 弧线大师 · 已解锁</string>
+    <string name="pg_milestone_2_locked">○ 弧线大师 · 训练 6 次解锁</string>
+    <string name="pg_milestone_3_unlocked">★ 精英终结者 · 已解锁</string>
+    <string name="pg_milestone_3_locked">○ 精英终结者 · 训练 12 次解锁</string>
+    <string name="pg_live_title">实时 3D 建模</string>
+    <string name="pg_replay">动作回放</string>
+    <string name="pg_capture">记录数据</string>
+    <string name="pg_joint_label">关节灵活度</string>
+    <string name="pg_sprint_label">冲刺角度</string>
+    <string name="pg_joint_value_format">%1$d 点</string>
+    <string name="pg_sprint_value_format">%1$d°</string>
+    <string name="pg_performance_title">能力矩阵</string>
+    <string name="pg_attr_power">力量</string>
+    <string name="pg_attr_accuracy">准度</string>
+    <string name="pg_attr_technique">技巧</string>
+    <string name="pg_attr_agility">敏捷</string>
+    <string name="pg_pro_compare_title">球星对标</string>
+    <string name="pg_pro_target">梅西 · 目标模板</string>
+    <string name="pg_role_elite">精英射手</string>
+    <string name="pg_role_core">核心主力</string>
+    <string name="pg_role_rookie">新秀养成中</string>
     <string name="pg_gain_overview_format">本次训练加点：力量 +%1$d  准度 +%2$d  技巧 +%3$d  敏捷 +%4$d</string>
     <string name="pg_mapping_note_format">机制映射：关节活动度 = 盘带能力（当前 %1$d），冲刺角度 = 速度能力（当前 %2$d）。你的身体就是游戏手柄，每次真实训练都会转化为虚拟人物属性成长。</string>
     <string name="pg_replay_hint">回放模块开发中，已记录本次动作数据</string>
@@ -209,10 +209,11 @@
     <string name="common_yes">是</string>
     <string name="common_no">否</string>
 
-    <string name="home_brand_slogan">STRIKER AI:\nUNLEASH THE PRO</string>
-    <string name="home_efficiency_matrix_title">EFFICIENCY MATRIX</string>
-    <string name="home_daily_hyper_focus_title">Daily Hyper-Focus</string>
-    <string name="home_global_pulse_title">Global Pulse</string>
+    <string name="home_brand_slogan">足智多谋：
+赋能每一次训练</string>
+    <string name="home_efficiency_matrix_title">训练效率</string>
+    <string name="home_daily_hyper_focus_title">今日训练焦点</string>
+    <string name="home_global_pulse_title">球星动态</string>
 
     <string name="splash_chip">SYSTEM ONLINE</string>
     <string name="splash_brand">STRIKER AI</string>
@@ -226,7 +227,7 @@
     <string name="milestone_new_title">我的里程碑</string>
     <string name="milestone_header_level_format">等级 %1$d</string>
     <string name="milestone_percent_format">%1$d%%</string>
-    <string name="milestone_progress_label">CURRENT FORM</string>
+    <string name="milestone_progress_label">总目标</string>
     <string name="milestone_month_hours_format">本月您已完成 %1$d 小时训练。</string>
     <string name="milestone_experience_detail_format">经验 %1$d / %2$d · 单次训练 +%3$d XP</string>
 
