@@ -22,8 +22,8 @@ import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 
 import com.example.football.R;
-import com.example.football.database.MilestoneDbHelper;
-import com.example.football.utils.SPUtils;
+import com.example.football.data.AppRepository;
+import com.example.football.data.RepositoryProvider;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.text.SimpleDateFormat;
@@ -52,8 +52,8 @@ public class TrainRecognitionActivity extends AppCompatActivity {
     private int totalScore = 0; // 总评分
     private Handler handler = new Handler(Looper.getMainLooper());
     private Runnable recognizeRunnable; // 模拟识别的定时任务
+    private AppRepository repository;
 
-    private static final String SP_KEY_TRAIN_RECORDS = "train_records";
 
     private final ActivityResultLauncher<String> cameraPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -68,6 +68,8 @@ public class TrainRecognitionActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_train_recognition);
+
+        repository = RepositoryProvider.get(this);
 
         // 1. 初始化所有控件
         initViews();
@@ -143,18 +145,9 @@ public class TrainRecognitionActivity extends AppCompatActivity {
                 .format(new Date());
         String record = time + " | " + currentMode + " | 次数:" + actionCount + " | 均分:" + avgScore;
 
-        String account = SPUtils.getString(this, "account", "default");
-        String recordKey = getTrainRecordsKey(account);
-        String oldRecords = SPUtils.getString(this, recordKey, "");
-        String newRecords = record + (oldRecords.isEmpty() ? "" : "\n" + oldRecords);
-        SPUtils.putString(this, recordKey, newRecords);
-
-        MilestoneDbHelper.getInstance(this)
-                .recordTrainingResult(account, currentMode, avgScore, actionCount);
-    }
-
-    private String getTrainRecordsKey(String account) {
-        return SP_KEY_TRAIN_RECORDS + "_" + account;
+        String account = repository.getCurrentAccount();
+        repository.prependTrainRecord(account, record);
+        repository.recordTrainingResult(account, currentMode, avgScore, actionCount);
     }
 
     /**

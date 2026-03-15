@@ -18,17 +18,18 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.football.R;
-import com.example.football.database.MilestoneDbHelper;
-import com.example.football.utils.SPUtils;
+import com.example.football.data.AppRepository;
+import com.example.football.data.RepositoryProvider;
+import com.example.football.database.entity.TrainRecord;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class TrainRecordsActivity extends AppCompatActivity {
 
     public static final String EXTRA_ACCOUNT = "extra_account";
-    private static final String SP_KEY_TRAIN_RECORDS = "train_records";
 
     private LinearLayout layoutRecordsContainer;
     private TextView tvEmptyRecords;
@@ -48,20 +49,22 @@ public class TrainRecordsActivity extends AppCompatActivity {
     private VideoView vvPreview;
 
     private String currentAccount = "default";
-    private final ArrayList<String> records = new ArrayList<>();
+    private final ArrayList<TrainRecord> records = new ArrayList<>();
     private final Handler progressHandler = new Handler(Looper.getMainLooper());
     private Runnable progressRunnable;
     private int selectedIndex = -1;
+    private AppRepository repository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_train_records);
 
+        repository = RepositoryProvider.get(this);
+
         currentAccount = getIntent().getStringExtra(EXTRA_ACCOUNT);
         if (TextUtils.isEmpty(currentAccount)) {
-            String account = SPUtils.getString(this, "account", "default");
-            currentAccount = TextUtils.isEmpty(account) ? "default" : account;
+            currentAccount = repository.getCurrentAccount();
         }
 
         findViewById(R.id.btn_back).setOnClickListener(v -> finish());
@@ -128,9 +131,8 @@ public class TrainRecordsActivity extends AppCompatActivity {
     }
 
     private void clearAllRecords() {
-        SPUtils.putString(this, getTrainRecordsKey(currentAccount), "");
-        SPUtils.putString(this, SP_KEY_TRAIN_RECORDS, ""); // backward compatibility
-        MilestoneDbHelper.getInstance(this).resetTrainingProgress(currentAccount);
+        repository.saveTrainRecords(currentAccount, "");
+        repository.resetTrainingProgress(currentAccount);
         selectedIndex = -1;
         resetPreviewPanel();
         stopVideo();
@@ -139,29 +141,22 @@ public class TrainRecordsActivity extends AppCompatActivity {
     }
 
     private void loadRecords() {
-        String raw = SPUtils.getString(this, getTrainRecordsKey(currentAccount), "");
-        if (TextUtils.isEmpty(raw)) {
-            raw = SPUtils.getString(this, SP_KEY_TRAIN_RECORDS, "");
-            if (!TextUtils.isEmpty(raw)) {
-                SPUtils.putString(this, getTrainRecordsKey(currentAccount), raw);
-            }
-        }
+        List<TrainRecord> stored = repository.getTrainRecordList(currentAccount);
 
         records.clear();
         layoutRecordsContainer.removeAllViews();
-        if (TextUtils.isEmpty(raw)) {
+        if (stored != null) {
+            for (TrainRecord record : stored) {
+                if (record != null && !TextUtils.isEmpty(resolveRawText(record))) {
+                    records.add(record);
+                }
+            }
+        }
+        if (records.isEmpty()) {
             tvEmptyRecords.setVisibility(View.VISIBLE);
             resetPreviewPanel();
             stopVideo();
             return;
-        }
-
-        String[] lines = raw.split("\\n");
-        for (String line : lines) {
-            String trimmed = line == null ? "" : line.trim();
-            if (!trimmed.isEmpty()) {
-                records.add(trimmed);
-            }
         }
 
         if (selectedIndex < 0 || selectedIndex >= records.size()) {
@@ -169,23 +164,21 @@ public class TrainRecordsActivity extends AppCompatActivity {
         }
 
         for (int i = 0; i < records.size(); i++) {
-            View item = buildRecordItem(records.get(i), i, i == selectedIndex);
+            TrainRecord record = records.get(i);
+            View item = buildRecordItem(record, i, i == selectedIndex);
             layoutRecordsContainer.addView(item);
         }
-        tvEmptyRecords.setVisibility(records.isEmpty() ? View.VISIBLE : View.GONE);
-
-        if (!records.isEmpty()) {
-            bindRecordToPreview(records.get(selectedIndex));
-        }
+        tvEmptyRecords.setVisibility(View.GONE);
+        bindRecordToPreview(records.get(selectedIndex));
     }
 
-    private View buildRecordItem(String record, int index, boolean selected) {
+    private View buildRecordItem(TrainRecord record, int index, boolean selected) {
         View row = LayoutInflater.from(this).inflate(R.layout.item_train_record, layoutRecordsContainer, false);
         TextView tv = row.findViewById(R.id.tv_record_content);
         TextView btnShare = row.findViewById(R.id.tv_record_share);
         TextView btnDelete = row.findViewById(R.id.tv_record_delete);
 
-        tv.setText(record);
+        tv.setText(resolveRawText(record));
         row.setAlpha(selected ? 1f : 0.92f);
 
         View.OnClickListener previewClick = v -> {
@@ -208,60 +201,48 @@ public class TrainRecordsActivity extends AppCompatActivity {
         }
     }
 
-    private void bindRecordToPreview(String record) {
-        ParsedRecord parsed = parseRecord(record);
+    private void bindRecordToPreview(TrainRecord record) {
+        ParsedRecord parsed = toParsedRecord(record);
         updateMetrics(parsed);
         bindVideo(parsed.videoPath);
     }
 
-    private ParsedRecord parseRecord(String record) {
+    private ParsedRecord toParsedRecord(TrainRecord record) {
+        TrainRecord fallback = TrainRecord.fromRawText(resolveRawText(record));
         ParsedRecord parsed = new ParsedRecord();
-        parsed.raw = record;
-        parsed.mode = "训练";
-        parsed.count = 0;
-        parsed.avgScore = 0;
-        parsed.videoPath = "";
-        parsed.time = "";
+        parsed.raw = resolveRawText(record);
+        parsed.mode = firstNonEmpty(record.mode, fallback.mode, "训练");
+        parsed.count = record.actionCount > 0 ? record.actionCount : fallback.actionCount;
+        parsed.avgScore = record.avgScore > 0 ? record.avgScore : fallback.avgScore;
+        parsed.videoPath = firstNonEmpty(record.videoPath, fallback.videoPath, "");
+        parsed.time = firstNonEmpty(record.createdAt, fallback.createdAt, "");
+        return parsed;
+    }
 
-        String[] parts = record.split("\\|");
-        for (int i = 0; i < parts.length; i++) {
-            String part = parts[i] == null ? "" : parts[i].trim();
-            if (i == 0 && part.contains("-") && part.contains(":")) {
-                parsed.time = part;
-            }
-            if (part.startsWith("次数:")) {
-                parsed.count = safeParseInt(part.substring(3));
-                continue;
-            }
-            if (part.startsWith("次数：")) {
-                parsed.count = safeParseInt(part.substring(3));
-                continue;
-            }
-            if (part.startsWith("均分:")) {
-                parsed.avgScore = safeParseInt(part.substring(3));
-                continue;
-            }
-            if (part.startsWith("均分：")) {
-                parsed.avgScore = safeParseInt(part.substring(3));
-                continue;
-            }
-            if (part.startsWith("视频:")) {
-                parsed.videoPath = part.substring(3).trim();
-                continue;
-            }
-            if (part.startsWith("视频：")) {
-                parsed.videoPath = part.substring(3).trim();
-                continue;
-            }
-
-            if (part.contains(getString(R.string.train_mode_shoot))
-                    || part.contains(getString(R.string.train_mode_dribble))
-                    || part.contains(getString(R.string.train_mode_pass))) {
-                parsed.mode = part;
+    private String firstNonEmpty(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String value : values) {
+            if (!TextUtils.isEmpty(value) && !value.trim().isEmpty()) {
+                return value.trim();
             }
         }
+        return "";
+    }
 
-        return parsed;
+    private String resolveRawText(TrainRecord record) {
+        if (record == null) {
+            return "";
+        }
+        if (!TextUtils.isEmpty(record.rawText)) {
+            return record.rawText.trim();
+        }
+        String time = firstNonEmpty(record.createdAt, "--");
+        String mode = firstNonEmpty(record.mode, "训练");
+        String video = TextUtils.isEmpty(record.videoPath) ? "无" : record.videoPath;
+        return time + " | " + mode + " | 次数:" + Math.max(0, record.actionCount)
+                + " | 均分:" + Math.max(0, record.avgScore) + " | 视频:" + video;
     }
 
     private void updateMetrics(ParsedRecord parsed) {
@@ -417,15 +398,15 @@ public class TrainRecordsActivity extends AppCompatActivity {
         Toast.makeText(this, getString(R.string.train_record_deleted), Toast.LENGTH_SHORT).show();
     }
 
-    private void shareRecord(String record) {
+    private void shareRecord(TrainRecord record) {
         Intent shareIntent = new Intent(Intent.ACTION_SEND);
         shareIntent.setType("text/plain");
         shareIntent.putExtra(Intent.EXTRA_TEXT, buildShareText(record));
         startActivity(Intent.createChooser(shareIntent, getString(R.string.train_record_share_chooser)));
     }
 
-    private String buildShareText(String record) {
-        ParsedRecord parsed = parseRecord(record);
+    private String buildShareText(TrainRecord record) {
+        ParsedRecord parsed = toParsedRecord(record);
         String timeText = TextUtils.isEmpty(parsed.time) ? getString(R.string.train_record_share_default_time) : parsed.time;
         String modeText = TextUtils.isEmpty(parsed.mode) ? getString(R.string.train_record_share_default_mode) : parsed.mode;
         return getString(
@@ -444,31 +425,11 @@ public class TrainRecordsActivity extends AppCompatActivity {
             if (i > 0) {
                 sb.append('\n');
             }
-            sb.append(records.get(i));
+            sb.append(resolveRawText(records.get(i)));
         }
-        String updated = sb.toString();
-        SPUtils.putString(this, getTrainRecordsKey(currentAccount), updated);
-        SPUtils.putString(this, SP_KEY_TRAIN_RECORDS, updated); // backward compatibility
+        repository.saveTrainRecords(currentAccount, sb.toString());
     }
 
-    private String getTrainRecordsKey(String account) {
-        return SP_KEY_TRAIN_RECORDS + "_" + account;
-    }
-
-    private int safeParseInt(String raw) {
-        if (TextUtils.isEmpty(raw)) {
-            return 0;
-        }
-        String digits = raw.replaceAll("[^0-9-]", "").trim();
-        if (TextUtils.isEmpty(digits)) {
-            return 0;
-        }
-        try {
-            return Integer.parseInt(digits);
-        } catch (NumberFormatException e) {
-            return 0;
-        }
-    }
 
     private String formatMs(int ms) {
         int totalSec = Math.max(0, ms / 1000);

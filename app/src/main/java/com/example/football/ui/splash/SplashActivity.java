@@ -17,9 +17,10 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.example.football.R;
+import com.example.football.data.AppRepository;
+import com.example.football.data.RepositoryProvider;
 import com.example.football.ui.login.LoginActivity;
 import com.example.football.ui.main.MainActivity;
-import com.example.football.utils.SPUtils;
 
 public class SplashActivity extends AppCompatActivity {
 
@@ -34,6 +35,8 @@ public class SplashActivity extends AppCompatActivity {
     private TextView tvSplashTitle;
     private ValueAnimator titleGlowAnimator;
     private ValueAnimator cometPulseAnimator;
+
+    private AppRepository repository;
 
     private final Runnable progressRunnable = new Runnable() {
         private int elapsedMs = 0;
@@ -56,7 +59,7 @@ public class SplashActivity extends AppCompatActivity {
     };
 
     private final Runnable navigateRunnable = () -> {
-        boolean isLogin = SPUtils.getBoolean(SplashActivity.this, "isLogin", false);
+        boolean isLogin = repository.isLoggedIn();
         Intent intent;
         if (isLogin) {
             intent = new Intent(SplashActivity.this, MainActivity.class);
@@ -71,6 +74,8 @@ public class SplashActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
+
+        repository = RepositoryProvider.get(this);
 
         pbSplashProgress = findViewById(R.id.pb_splash_progress);
         tvSplashProgressPercent = findViewById(R.id.tv_splash_progress_percent);
