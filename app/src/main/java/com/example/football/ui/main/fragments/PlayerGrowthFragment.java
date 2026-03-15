@@ -1,11 +1,14 @@
 package com.example.football.ui.main.fragments;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -16,6 +19,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.webkit.WebViewAssetLoader;
 
 import com.example.football.R;
 import com.example.football.data.AppRepository;
@@ -51,6 +55,7 @@ public class PlayerGrowthFragment extends Fragment {
     private ProgressBar pbTechnique;
     private ProgressBar pbAgility;
     private AppRepository repository;
+    private WebViewAssetLoader assetLoader;
 
     @Nullable
     @Override
@@ -176,13 +181,30 @@ public class PlayerGrowthFragment extends Fragment {
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
+        settings.setAllowFileAccess(true);
+        settings.setAllowContentAccess(true);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+
+        assetLoader = new WebViewAssetLoader.Builder()
+                .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(requireContext()))
+                .build();
 
         wvLiveModel.setVerticalScrollBarEnabled(false);
         wvLiveModel.setHorizontalScrollBarEnabled(false);
         wvLiveModel.setBackgroundColor(0x00000000);
-        wvLiveModel.setWebViewClient(new WebViewClient());
+        wvLiveModel.setWebViewClient(new WebViewClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                return assetLoader.shouldInterceptRequest(request.getUrl());
+            }
+
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+                return assetLoader.shouldInterceptRequest(Uri.parse(url));
+            }
+        });
         wvLiveModel.setWebChromeClient(new WebChromeClient());
-        wvLiveModel.loadUrl("file:///android_asset/player_growth_live3d.html");
+        wvLiveModel.loadUrl("https://appassets.androidplatform.net/assets/player_growth_live3d.html");
     }
 
     private void bindAttr(@NonNull ProgressBar progressBar, @NonNull TextView valueText, int value) {

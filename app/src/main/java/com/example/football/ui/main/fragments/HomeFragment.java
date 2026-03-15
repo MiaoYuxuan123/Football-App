@@ -3,7 +3,6 @@ package com.example.football.ui.main.fragments;
 import android.annotation.SuppressLint;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
@@ -27,14 +26,12 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.example.football.R;
 import com.example.football.data.AppRepository;
 import com.example.football.data.RepositoryProvider;
+import com.example.football.data.TrainingRefreshNotifier;
 import com.example.football.database.MilestoneDbHelper;
 import com.example.football.ui.main.MainActivity;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -44,7 +41,6 @@ import java.util.Locale;
 public class HomeFragment extends Fragment {
 
     private static final long STAR_BANNER_AUTO_SCROLL_DELAY_MS = 3200L;
-    private static final String STAR_PHOTO_FOLDER_NAME = "star_photos";
     private static final String STAR_PHOTO_ASSET_DIR = "star_photos";
 
     private TextView tvHomeGreeting;
@@ -200,6 +196,12 @@ public class HomeFragment extends Fragment {
         btnHomeUploadStarPhotos = null;
     }
 
+    @Override
+    public void onViewCreated(@NonNull View view, android.os.Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        observeTrainingRefresh();
+    }
+
     private void bindHomeSummary() {
         if (!isAdded()) {
             return;
@@ -319,11 +321,6 @@ public class HomeFragment extends Fragment {
     }
 
     private List<HomeStarBannerAdapter.StarBannerItem> buildStarBannerItems() {
-        List<HomeStarBannerAdapter.StarBannerItem> assetItems = loadAssetStarPhotos();
-        if (!assetItems.isEmpty()) {
-            return assetItems;
-        }
-
         List<File> localFiles = loadLocalStarPhotos();
         if (!localFiles.isEmpty()) {
             List<HomeStarBannerAdapter.StarBannerItem> items = new ArrayList<>();
@@ -335,6 +332,11 @@ public class HomeFragment extends Fragment {
                 ));
             }
             return items;
+        }
+
+        List<HomeStarBannerAdapter.StarBannerItem> assetItems = loadAssetStarPhotos();
+        if (!assetItems.isEmpty()) {
+            return assetItems;
         }
 
         return Arrays.asList(
@@ -377,32 +379,28 @@ public class HomeFragment extends Fragment {
     }
 
     private List<File> loadLocalStarPhotos() {
-        File folder = getStarPhotoDirectory();
-        File[] files = folder.listFiles(file -> {
-            if (file == null || !file.isFile()) {
-                return false;
-            }
-            String name = file.getName().toLowerCase(Locale.US);
-            return name.endsWith(".jpg") || name.endsWith(".jpeg")
-                    || name.endsWith(".png") || name.endsWith(".webp");
-        });
-        if (files == null || files.length == 0) {
+        List<String> paths = repository.getLocalStarPhotoPaths();
+        if (paths == null || paths.isEmpty()) {
             return new ArrayList<>();
         }
-        Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
-        return Arrays.asList(files);
-    }
 
-    private File getStarPhotoDirectory() {
-        File baseDir = requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        if (baseDir == null) {
-            baseDir = requireContext().getFilesDir();
+        List<File> files = new ArrayList<>();
+        for (String path : paths) {
+            if (TextUtils.isEmpty(path)) {
+                continue;
+            }
+            File file = new File(path);
+            if (!file.exists() || !file.isFile()) {
+                continue;
+            }
+            String name = file.getName().toLowerCase(Locale.US);
+            if (name.endsWith(".jpg") || name.endsWith(".jpeg")
+                    || name.endsWith(".png") || name.endsWith(".webp")) {
+                files.add(file);
+            }
         }
-        File starDir = new File(baseDir, STAR_PHOTO_FOLDER_NAME);
-        if (!starDir.exists()) {
-            starDir.mkdirs();
-        }
-        return starDir;
+        files.sort((left, right) -> Long.compare(right.lastModified(), left.lastModified()));
+        return files;
     }
 
     private void handlePickedStarPhotos(List<Uri> uris) {
@@ -413,56 +411,13 @@ public class HomeFragment extends Fragment {
             Toast.makeText(requireContext(), getString(R.string.home_star_upload_none), Toast.LENGTH_SHORT).show();
             return;
         }
-        int copied = copyUrisToLocalStarFolder(uris);
+        int copied = repository.importStarPhotos(uris);
         if (copied > 0) {
             Toast.makeText(requireContext(), getString(R.string.home_star_upload_success_format, copied), Toast.LENGTH_SHORT).show();
             setupStarBanner();
         } else {
             Toast.makeText(requireContext(), getString(R.string.home_star_upload_failed), Toast.LENGTH_SHORT).show();
         }
-    }
-
-    private int copyUrisToLocalStarFolder(@NonNull List<Uri> uris) {
-        int copied = 0;
-        File folder = getStarPhotoDirectory();
-        for (int i = 0; i < uris.size(); i++) {
-            Uri uri = uris.get(i);
-            String ext = guessImageExtension(uri);
-            File outFile = new File(folder, "star_" + System.currentTimeMillis() + "_" + i + ext);
-            try (InputStream input = requireContext().getContentResolver().openInputStream(uri);
-                 OutputStream output = new FileOutputStream(outFile)) {
-                if (input == null) {
-                    continue;
-                }
-                byte[] buffer = new byte[8192];
-                int len;
-                while ((len = input.read(buffer)) != -1) {
-                    output.write(buffer, 0, len);
-                }
-                output.flush();
-                copied++;
-            } catch (IOException e) {
-                outFile.delete();
-            }
-        }
-        return copied;
-    }
-
-    private String guessImageExtension(Uri uri) {
-        String type = requireContext().getContentResolver().getType(uri);
-        if (type == null) {
-            return ".jpg";
-        }
-        if (type.contains("png")) {
-            return ".png";
-        }
-        if (type.contains("webp")) {
-            return ".webp";
-        }
-        if (type.contains("jpeg") || type.contains("jpg")) {
-            return ".jpg";
-        }
-        return ".jpg";
     }
 
     private void updateStarIndicators(int position) {
@@ -502,5 +457,22 @@ public class HomeFragment extends Fragment {
 
     private void stopStarBannerAutoScroll() {
         autoScrollHandler.removeCallbacks(autoScrollRunnable);
+    }
+
+    private void observeTrainingRefresh() {
+        TrainingRefreshNotifier.events().observe(getViewLifecycleOwner(), event -> {
+            if (event == null || repository == null) {
+                return;
+            }
+            if (!event.matchesAccount(repository.getCurrentAccount())) {
+                return;
+            }
+            if (event.affectsOverview()) {
+                bindHomeSummary();
+            }
+            if (event.affectsMedia()) {
+                setupStarBanner();
+            }
+        });
     }
 }

@@ -54,14 +54,12 @@ import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker;
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.nio.ByteBuffer;
 
 public class TrainFragment extends Fragment {
 
@@ -487,20 +485,19 @@ public class TrainFragment extends Fragment {
             return;
         }
 
-        File baseDir = requireContext().getExternalFilesDir(android.os.Environment.DIRECTORY_MOVIES);
-        if (baseDir == null) {
-            Toast.makeText(requireContext(), getString(R.string.train_toast_dir_unavailable), Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        File videoDir = new File(baseDir, "train_videos");
-        if (!videoDir.exists() && !videoDir.mkdirs()) {
+        String outputPath = repository.createTrainingVideoPath();
+        if (outputPath == null || outputPath.trim().isEmpty()) {
             Toast.makeText(requireContext(), getString(R.string.train_toast_dir_create_failed), Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String fileName = "train_" + System.currentTimeMillis() + ".mp4";
-        File videoFile = new File(videoDir, fileName);
+        File videoFile = new File(outputPath);
+        File parent = videoFile.getParentFile();
+        if (parent == null || (!parent.exists() && !parent.mkdirs())) {
+            Toast.makeText(requireContext(), getString(R.string.train_toast_dir_create_failed), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         final String sessionRawPath = videoFile.getAbsolutePath();
         pendingVideoPath = sessionRawPath;
         lastVideoPath = "";
@@ -559,14 +556,9 @@ public class TrainFragment extends Fragment {
 
     private void saveTrainRecord() {
         int avgScore = actionCount > 0 ? totalScore / actionCount : 0;
-        String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                .format(new Date());
-        String videoInfo = (!videoFinalizeDone || lastVideoPath.isEmpty()) ? "视频:无" : "视频:" + lastVideoPath;
-        String record = time + " | " + currentMode + " | 次数:" + actionCount + " | 均分:" + avgScore + " | " + videoInfo;
-
         String account = repository.getCurrentAccount();
-        repository.prependTrainRecord(account, record);
-        repository.recordTrainingResult(account, currentMode, avgScore, actionCount);
+        String videoPath = (videoFinalizeDone && !lastVideoPath.isEmpty()) ? lastVideoPath : "";
+        repository.saveTrainingSession(account, currentMode, avgScore, actionCount, videoPath);
     }
 
 

@@ -16,22 +16,21 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
 import com.example.football.R;
 import com.example.football.data.AppRepository;
 import com.example.football.data.RepositoryProvider;
+import com.example.football.data.TrainingRefreshNotifier;
 import com.example.football.ui.login.LoginActivity;
 import com.example.football.ui.train.TrainRecordsActivity;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
 
 public class MineFragment extends Fragment {
 
     private ImageView ivAvatar;
-    private String avatarSpKey = "avatar_path_default";
     private String currentAccount = "default";
     private AppRepository repository;
 
@@ -57,8 +56,6 @@ public class MineFragment extends Fragment {
 
         ivAvatar = view.findViewById(R.id.iv_avatar);
         setupAvatarStyle();
-        avatarSpKey = "avatar_path_" + currentAccount;
-        ensureAvatarDir();
         loadAvatar();
 
         View btnUploadAvatar = view.findViewById(R.id.btn_upload_avatar);
@@ -85,13 +82,19 @@ public class MineFragment extends Fragment {
         return view;
     }
 
+    @Override
+    public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        observeTrainingRefresh();
+    }
+
     private void showHelpDialog() {
-        String helpText = "使用指引：\n\n" +
-                "1. 首页：查看足球识别和评分功能\n" +
-                "2. 识别：点击开始识别按钮进行足球动作识别\n" +
-                "3. 历史：查看历史识别记录和评分\n" +
-                "4. 个人中心：查看个人信息和设置\n\n" +
-                "如有问题请联系客服。";
+        String helpText = "使用指引：\n\n"
+                + "1. 首页：查看足球识别和评分功能\n"
+                + "2. 识别：点击开始识别按钮进行足球动作识别\n"
+                + "3. 历史：查看历史识别记录和评分\n"
+                + "4. 个人中心：查看个人信息和设置\n\n"
+                + "如有问题请联系客服。";
 
         new AlertDialog.Builder(requireActivity())
                 .setTitle("帮助")
@@ -100,28 +103,9 @@ public class MineFragment extends Fragment {
                 .show();
     }
 
-    private File ensureAvatarDir() {
-        File dir = new File(requireContext().getFilesDir(), "avatars");
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
-        return dir;
-    }
-
     private void saveAvatar(Uri uri) {
-        File target = new File(ensureAvatarDir(), avatarSpKey + ".jpg");
-        try (InputStream in = requireContext().getContentResolver().openInputStream(uri);
-             FileOutputStream out = new FileOutputStream(target)) {
-            if (in == null) {
-                return;
-            }
-            byte[] buffer = new byte[4096];
-            int len;
-            while ((len = in.read(buffer)) != -1) {
-                out.write(buffer, 0, len);
-            }
-            repository.setAvatarPath(currentAccount, target.getAbsolutePath());
-        } catch (Exception e) {
+        String path = repository.saveAvatarFromUri(currentAccount, uri);
+        if (TextUtils.isEmpty(path)) {
             Toast.makeText(requireActivity(), "头像保存失败", Toast.LENGTH_SHORT).show();
         }
     }
@@ -146,5 +130,16 @@ public class MineFragment extends Fragment {
         } else {
             ivAvatar.setImageResource(android.R.drawable.ic_menu_myplaces);
         }
+    }
+
+    private void observeTrainingRefresh() {
+        TrainingRefreshNotifier.events().observe(getViewLifecycleOwner(), event -> {
+            if (event == null || repository == null) {
+                return;
+            }
+            if (event.matchesAccount(currentAccount) && event.affectsMedia()) {
+                loadAvatar();
+            }
+        });
     }
 }

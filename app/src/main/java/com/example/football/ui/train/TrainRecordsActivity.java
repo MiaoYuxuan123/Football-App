@@ -20,6 +20,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.football.R;
 import com.example.football.data.AppRepository;
 import com.example.football.data.RepositoryProvider;
+import com.example.football.data.TrainingRefreshNotifier;
 import com.example.football.database.entity.TrainRecord;
 
 import java.io.File;
@@ -54,6 +55,7 @@ public class TrainRecordsActivity extends AppCompatActivity {
     private Runnable progressRunnable;
     private int selectedIndex = -1;
     private AppRepository repository;
+    private long lastHandledRefreshVersion = -1L;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +68,7 @@ public class TrainRecordsActivity extends AppCompatActivity {
         if (TextUtils.isEmpty(currentAccount)) {
             currentAccount = repository.getCurrentAccount();
         }
+        lastHandledRefreshVersion = System.currentTimeMillis();
 
         findViewById(R.id.btn_back).setOnClickListener(v -> finish());
 
@@ -92,6 +95,7 @@ public class TrainRecordsActivity extends AppCompatActivity {
 
         findViewById(R.id.btn_clear_records).setOnClickListener(v -> showClearRecordsConfirmDialog());
 
+        observeTrainingRefresh();
         loadRecords();
     }
 
@@ -442,12 +446,28 @@ public class TrainRecordsActivity extends AppCompatActivity {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
+    private void observeTrainingRefresh() {
+        TrainingRefreshNotifier.events().observe(this, event -> {
+            if (event == null || repository == null) {
+                return;
+            }
+            if (!event.matchesAccount(currentAccount) || !event.affectsRecords()) {
+                return;
+            }
+            if (event.version <= lastHandledRefreshVersion) {
+                return;
+            }
+            lastHandledRefreshVersion = event.version;
+            loadRecords();
+        });
+    }
+
     private static class ParsedRecord {
         String raw;
-        String time;
         String mode;
-        String videoPath;
+        String time;
         int count;
         int avgScore;
+        String videoPath;
     }
 }

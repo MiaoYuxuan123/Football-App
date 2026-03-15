@@ -1,6 +1,7 @@
 package com.example.football.data;
 
 import android.content.Context;
+import android.net.Uri;
 import android.text.TextUtils;
 
 import com.example.football.database.MilestoneDbHelper;
@@ -8,8 +9,15 @@ import com.example.football.database.entity.MilestoneData;
 import com.example.football.database.entity.TrainRecord;
 import com.example.football.utils.SPUtils;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class AppRepositoryImpl implements AppRepository {
 
@@ -69,7 +77,9 @@ public class AppRepositoryImpl implements AppRepository {
 
     @Override
     public void resetTrainingProgress(String account) {
-        MilestoneDbHelper.getInstance(appContext).resetTrainingProgress(normalizeAccount(account));
+        String normalized = normalizeAccount(account);
+        MilestoneDbHelper.getInstance(appContext).resetTrainingProgress(normalized);
+        TrainingRefreshNotifier.notifyOverviewChanged(normalized);
     }
 
     @Override
@@ -93,6 +103,7 @@ public class AppRepositoryImpl implements AppRepository {
                 .replaceTrainRecords(normalized, parseTrainRecords(records));
         markTrainRecordsMigrated(normalized);
         clearLegacyTrainRecordKeys(normalized);
+        TrainingRefreshNotifier.notifyRecordsChanged(normalized);
     }
 
     @Override
@@ -106,6 +117,38 @@ public class AppRepositoryImpl implements AppRepository {
         MilestoneDbHelper.getInstance(appContext).prependTrainRecord(normalized, parsed);
         markTrainRecordsMigrated(normalized);
         clearLegacyTrainRecordKeys(normalized);
+        TrainingRefreshNotifier.notifyRecordsChanged(normalized);
+    }
+
+    @Override
+    public void saveTrainingSession(String account, String mode, int avgScore, int actionCount, String videoPath) {
+        String normalized = normalizeAccount(account);
+        ensureTrainRecordsMigrated(normalized);
+
+        TrainRecord record = new TrainRecord();
+        record.account = normalized;
+        record.createdAt = formatNow();
+        record.mode = mode == null ? "" : mode.trim();
+        record.actionCount = Math.max(0, actionCount);
+        record.avgScore = Math.max(0, avgScore);
+        record.videoPath = videoPath == null ? "" : videoPath.trim();
+        record.rawText = buildTrainRecordText(record);
+
+        MilestoneDbHelper.getInstance(appContext)
+                .saveTrainingSessionAtomic(normalized, record.mode, record.avgScore, record.actionCount, record);
+        markTrainRecordsMigrated(normalized);
+        clearLegacyTrainRecordKeys(normalized);
+        TrainingRefreshNotifier.notifyAllChanged(normalized);
+    }
+
+    @Override
+    public String createTrainingVideoPath() {
+        File dir = new File(appContext.getFilesDir(), "train_videos");
+        if (!dir.exists() && !dir.mkdirs()) {
+            return "";
+        }
+        String fileName = "train_" + System.currentTimeMillis() + ".mp4";
+        return new File(dir, fileName).getAbsolutePath();
     }
 
     @Override
@@ -115,7 +158,72 @@ public class AppRepositoryImpl implements AppRepository {
 
     @Override
     public void setAvatarPath(String account, String path) {
-        SPUtils.putString(appContext, buildAvatarPathKey(account), path == null ? "" : path);
+        String normalized = normalizeAccount(account);
+        SPUtils.putString(appContext, buildAvatarPathKey(normalized), path == null ? "" : path);
+        TrainingRefreshNotifier.notifyMediaChanged(normalized);
+    }
+
+    @Override
+    public String saveAvatarFromUri(String account, Uri uri) {
+        String normalized = normalizeAccount(account);
+        if (uri == null) {
+            return "";
+        }
+        File dir = new File(appContext.getFilesDir(), "avatars");
+        if (!dir.exists() && !dir.mkdirs()) {
+            return "";
+        }
+        File outFile = new File(dir, normalized + "_" + System.currentTimeMillis() + ".jpg");
+        if (!copyUriToFile(uri, outFile)) {
+            return "";
+        }
+        String path = outFile.getAbsolutePath();
+        setAvatarPath(normalized, path);
+        return path;
+    }
+
+    @Override
+    public List<String> getLocalStarPhotoPaths() {
+        List<String> result = new ArrayList<>();
+        File dir = new File(appContext.getFilesDir(), "star_photos");
+        if (!dir.exists() || !dir.isDirectory()) {
+            return result;
+        }
+        File[] files = dir.listFiles();
+        if (files == null) {
+            return result;
+        }
+        for (File file : files) {
+            if (file != null && file.isFile()) {
+                result.add(file.getAbsolutePath());
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public int importStarPhotos(List<Uri> uris) {
+        if (uris == null || uris.isEmpty()) {
+            return 0;
+        }
+        File dir = new File(appContext.getFilesDir(), "star_photos");
+        if (!dir.exists() && !dir.mkdirs()) {
+            return 0;
+        }
+        int imported = 0;
+        for (Uri uri : uris) {
+            if (uri == null) {
+                continue;
+            }
+            File outFile = new File(dir, "star_" + System.currentTimeMillis() + "_" + imported + ".jpg");
+            if (copyUriToFile(uri, outFile)) {
+                imported++;
+            }
+        }
+        if (imported > 0) {
+            TrainingRefreshNotifier.notifyMediaChanged(getCurrentAccount());
+        }
+        return imported;
     }
 
     private String buildTrainRecordsKey(String account) {
@@ -193,6 +301,36 @@ public class AppRepositoryImpl implements AppRepository {
             sb.append(lines.get(i));
         }
         return sb.toString();
+    }
+
+    private String formatNow() {
+        return new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
+    }
+
+    private String buildTrainRecordText(TrainRecord record) {
+        return record.createdAt
+                + " | " + record.mode
+                + " | 次数:" + record.actionCount
+                + " | 均分:" + record.avgScore
+                + (record.videoPath.isEmpty() ? "" : " | 视频:" + record.videoPath);
+    }
+
+    private boolean copyUriToFile(Uri uri, File outFile) {
+        try (InputStream in = appContext.getContentResolver().openInputStream(uri);
+             FileOutputStream out = new FileOutputStream(outFile)) {
+            if (in == null) {
+                return false;
+            }
+            byte[] buffer = new byte[8 * 1024];
+            int len;
+            while ((len = in.read(buffer)) > 0) {
+                out.write(buffer, 0, len);
+            }
+            out.flush();
+            return true;
+        } catch (IOException ignored) {
+            return false;
+        }
     }
 
     private String normalizeAccount(String account) {
