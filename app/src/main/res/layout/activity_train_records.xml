@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="Technical Analysis"
+            android:text="@string/train_records_analysis_title"
             android:textColor="@color/md_textPrimary"
             android:textSize="28sp"
             android:textStyle="bold" />
@@ -84,7 +84,7 @@
                     android:paddingTop="8dp"
                     android:paddingEnd="12dp"
                     android:paddingBottom="8dp"
-                    android:text="KNEE ANGLE\n115 deg"
+                    android:text="@string/train_records_knee_angle_preview"
                     android:textColor="#72FF52"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -99,7 +99,7 @@
                     android:paddingTop="8dp"
                     android:paddingEnd="12dp"
                     android:paddingBottom="8dp"
-                    android:text="HIP ROTATION\nACTIVE"
+                    android:text="@string/train_records_hip_rotation_preview"
                     android:textColor="#58E8FF"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -115,7 +115,7 @@
                     android:paddingTop="8dp"
                     android:paddingEnd="12dp"
                     android:paddingBottom="8dp"
-                    android:text="POWER OUTPUT\nHIGH"
+                    android:text="@string/train_records_power_output_preview"
                     android:textColor="#FF7C30"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -155,7 +155,7 @@
                         android:id="@+id/tv_video_toggle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="play"
+                        android:text="@string/common_play"
                         android:textColor="@android:color/white"
                         android:textSize="12sp" />
 
@@ -188,7 +188,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="IMPACT FORCE"
+                        android:text="@string/train_records_impact_force"
                         android:textColor="#67758F"
                         android:textSize="12sp" />
 
@@ -218,7 +218,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="SWING SPEED"
+                        android:text="@string/train_records_swing_speed"
                         android:textColor="#67758F"
                         android:textSize="12sp" />
 
@@ -238,7 +238,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="Technical Insights"
+                android:text="@string/train_records_insights_title"
                 android:textColor="#11162A"
                 android:textSize="34sp"
                 android:textStyle="bold" />
@@ -254,7 +254,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Biomechanics Alert"
+                    android:text="@string/train_records_biomechanics_alert"
                     android:textColor="#11162A"
                     android:textSize="18sp"
                     android:textStyle="bold" />
@@ -264,7 +264,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:text="Select one record below to preview video and technical analysis."
+                    android:text="@string/train_records_select_hint"
                     android:textColor="#355070"
                     android:textSize="15sp" />
 
@@ -273,7 +273,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:text="No training records yet. Complete one session and come back to review your motion trail."
+                    android:text="@string/train_records_empty_hint"
                     android:textColor="#355070"
                     android:textSize="15sp"
                     android:visibility="gone" />
@@ -290,7 +290,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Kinetic Chain Analysis"
+                    android:text="@string/train_records_kinetic_chain_title"
                     android:textColor="#11162A"
                     android:textSize="18sp"
                     android:textStyle="bold" />
@@ -300,7 +300,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="- Plant foot stability: Excellent (98%)"
+                    android:text="@string/train_records_chain_line_1_preview"
                     android:textColor="#2D3F58"
                     android:textSize="15sp" />
 
@@ -309,7 +309,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="- Torso lean: 12 deg (Within optimal range)"
+                    android:text="@string/train_records_chain_line_2_preview"
                     android:textColor="#2D3F58"
                     android:textSize="15sp" />
 
@@ -318,7 +318,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="- Follow-through can be extended by 5-10 cm"
+                    android:text="@string/train_records_chain_line_3_preview"
                     android:textColor="#2D3F58"
                     android:textSize="15sp" />
             </LinearLayout>
@@ -327,7 +327,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Training Records"
+                android:text="@string/train_records_list_title"
                 android:textColor="#11162A"
                 android:textSize="20sp"
                 android:textStyle="bold" />
@@ -354,7 +354,7 @@
         android:layout_marginTop="8dp"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
-        android:text="Clear Records"
+        android:text="@string/train_records_clear_button"
         android:textAllCaps="false"
         android:textSize="15sp"
         app:backgroundTint="#FF6D3A"
