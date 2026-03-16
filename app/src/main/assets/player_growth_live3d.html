@@ -40,11 +40,52 @@
       z-index: 2;
       user-select: none;
     }
+
+    /* 模型切换条 */
+    #model-switcher {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.45);
+      padding: 6px 8px;
+      border-radius: 999px;
+      z-index: 3;
+      backdrop-filter: blur(6px);
+    }
+
+    .model-btn {
+      border: none;
+      outline: none;
+      padding: 4px 10px;
+      font-size: 11px;
+      border-radius: 999px;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.12);
+      color: #f5f5f5;
+      white-space: nowrap;
+    }
+
+    .model-btn.active {
+      background: #1caad9;
+      color: #ffffff;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
   <div class="viewer">
+    <!-- 模型切换按钮条 -->
+    <div id="model-switcher">
+      <button class="model-btn active" data-model="0">模型 1</button>
+      <button class="model-btn" data-model="1">模型 2</button>
+    </div>
+
+    <!-- 只保留一个 iframe，初始为第一个模型 -->
     <iframe
+      id="modelFrame"
       title="Soccer player 1114-4"
       allowfullscreen
       mozallowfullscreen="true"
@@ -56,7 +97,41 @@
       web-share
       src="https://sketchfab.com/models/4cf0319e08a346e0812cea26afbf04c0/embed">
     </iframe>
-    <div id="hint">已切换为 Sketchfab 在线模型，双指缩放/单指旋转</div>
+    <div id="hint">双指缩放/单指旋转</div>
   </div>
+
+  <script>
+    // 两个模型的信息：第一个为默认模型，第二个为 Low poly football player
+    const models = [
+      {
+        title: 'Soccer player 1114-4',
+        src: 'https://sketchfab.com/models/4cf0319e08a346e0812cea26afbf04c0/embed'
+      },
+      {
+        title: 'Low poly football player',
+        src: 'https://sketchfab.com/models/36f2547b45424564a9a3aed88fdc0a28/embed'
+      }
+    ];
+
+    const iframe = document.getElementById('modelFrame');
+    const buttons = document.querySelectorAll('.model-btn');
+
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const index = parseInt(btn.getAttribute('data-model'), 10);
+        const model = models[index];
+
+        if (!model) return;
+
+        // 切换 iframe 的模型
+        iframe.src = model.src;
+        iframe.title = model.title;
+
+        // 更新按钮高亮状态
+        buttons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  </script>
 </body>
 </html>
