@@ -203,11 +203,55 @@
     <string name="train_record_deleted">该条训练记录已删除</string>
     <string name="train_record_no_video">该记录没有可播放视频</string>
     <string name="train_record_video_missing">视频文件不存在或已删除</string>
+    <string name="train_records_analysis_title">技术分析</string>
+    <string name="train_records_knee_angle_preview">膝关节角度\n115 度</string>
+    <string name="train_records_hip_rotation_preview">髋部旋转\n激活中</string>
+    <string name="train_records_power_output_preview">发力输出\n高</string>
+    <string name="train_records_impact_force">冲击力</string>
+    <string name="train_records_swing_speed">摆腿速度</string>
+    <string name="train_records_insights_title">技术洞察</string>
+    <string name="train_records_biomechanics_alert">生物力学提醒</string>
+    <string name="train_records_select_hint">请选择下方一条记录以预览视频和技术分析。</string>
+    <string name="train_records_empty_hint">暂无训练记录。完成一次训练后再回来查看你的动作轨迹。</string>
+    <string name="train_records_kinetic_chain_title">动力链分析</string>
+    <string name="train_records_chain_line_1_preview">- 支撑脚稳定性：优秀（98%）</string>
+    <string name="train_records_chain_line_2_preview">- 躯干前倾：12 度（处于最佳范围）</string>
+    <string name="train_records_chain_line_3_preview">- 随摆动作可再延长 5-10 厘米</string>
+    <string name="train_records_list_title">训练记录</string>
+    <string name="train_records_clear_button">清空记录</string>
+
+    <string name="train_records_state_active">激活中</string>
+    <string name="train_records_state_building">建立中</string>
+    <string name="train_records_state_high">高</string>
+    <string name="train_records_state_medium">中</string>
+    <string name="train_records_state_low">低</string>
+
+    <string name="train_records_knee_angle_value_format">膝关节角度\n%1$d 度</string>
+    <string name="train_records_hip_rotation_value_format">髋部旋转\n%1$s</string>
+    <string name="train_records_power_output_value_format">发力输出\n%1$s</string>
+    <string name="train_records_impact_force_value_format">%1$d N</string>
+    <string name="train_records_swing_speed_value_format">%1$.1f 米/秒</string>
+    <string name="train_records_insight_body_format">%1$s 的 %2$s 训练中，检测到膝关节角度约 %3$d 度，平均分 %4$d，动作次数 %5$d。建议保持核心稳定并延长随摆，以提升发力效率与动作连贯性。</string>
+    <string name="train_records_chain_line_1_format">- 支撑脚稳定性：优秀（%1$d%%）</string>
+    <string name="train_records_chain_line_2_format">- 躯干前倾：%1$d 度（处于最佳范围）</string>
+    <string name="train_records_chain_line_3_format">- 随摆动作可再延长 %1$d 厘米</string>
+
+    <string name="train_records_knee_angle_placeholder">膝关节角度\n--</string>
+    <string name="train_records_hip_rotation_placeholder">髋部旋转\n--</string>
+    <string name="train_records_power_output_placeholder">发力输出\n--</string>
+    <string name="train_records_impact_force_placeholder">-- N</string>
+    <string name="train_records_swing_speed_placeholder">-- 米/秒</string>
+    <string name="train_records_chain_line_1_placeholder">- 支撑脚稳定性：--</string>
+    <string name="train_records_chain_line_2_placeholder">- 躯干前倾：--</string>
+    <string name="train_records_chain_line_3_placeholder">- 随摆动作：--</string>
+
     <string name="train_records_cleared">训练记录已清空</string>
     <string name="train_records_clear_confirm_title">提示</string>
     <string name="train_records_clear_confirm_message">将会删除所有训练记录，包括您的累计训练次数和里程碑中的等级，是否继续</string>
     <string name="common_yes">是</string>
     <string name="common_no">否</string>
+    <string name="common_play">播放</string>
+    <string name="common_pause">暂停</string>
 
     <string name="home_brand_slogan">足智多谋：
 赋能每一次训练</string>

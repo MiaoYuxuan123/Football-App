@@ -105,7 +105,7 @@ public class TrainRecordsActivity extends AppCompatActivity {
         stopProgressUpdates();
         if (vvPreview != null && vvPreview.isPlaying()) {
             vvPreview.pause();
-            tvVideoToggle.setText("play");
+            tvVideoToggle.setText(R.string.common_play);
         }
     }
 
@@ -116,10 +116,10 @@ public class TrainRecordsActivity extends AppCompatActivity {
             }
             if (vvPreview.isPlaying()) {
                 vvPreview.pause();
-                tvVideoToggle.setText("play");
+                tvVideoToggle.setText(R.string.common_play);
             } else {
                 vvPreview.start();
-                tvVideoToggle.setText("pause");
+                tvVideoToggle.setText(R.string.common_pause);
                 startProgressUpdates();
             }
         });
@@ -251,18 +251,24 @@ public class TrainRecordsActivity extends AppCompatActivity {
 
     private void updateMetrics(ParsedRecord parsed) {
         int kneeAngle = 95 + Math.min(30, parsed.avgScore / 3);
-        String hipState = parsed.avgScore >= 70 ? "ACTIVE" : "BUILDING";
-        String powerState = parsed.avgScore >= 85 ? "HIGH" : parsed.avgScore >= 60 ? "MEDIUM" : "LOW";
+        String hipState = parsed.avgScore >= 70
+                ? getString(R.string.train_records_state_active)
+                : getString(R.string.train_records_state_building);
+        String powerState = parsed.avgScore >= 85
+                ? getString(R.string.train_records_state_high)
+                : parsed.avgScore >= 60
+                ? getString(R.string.train_records_state_medium)
+                : getString(R.string.train_records_state_low);
 
         int impactForce = 620 + parsed.avgScore * 3 + parsed.count * 4;
         double swingSpeed = 9.8 + (parsed.avgScore / 20.0) + (parsed.count / 15.0);
 
-        tvKneeAngle.setText("KNEE ANGLE\n" + kneeAngle + " deg");
-        tvHipRotation.setText("HIP ROTATION\n" + hipState);
-        tvPowerOutput.setText("POWER OUTPUT\n" + powerState);
+        tvKneeAngle.setText(getString(R.string.train_records_knee_angle_value_format, kneeAngle));
+        tvHipRotation.setText(getString(R.string.train_records_hip_rotation_value_format, hipState));
+        tvPowerOutput.setText(getString(R.string.train_records_power_output_value_format, powerState));
 
-        tvImpactForceValue.setText(impactForce + " N");
-        tvSwingSpeedValue.setText(String.format(Locale.getDefault(), "%.1f m/s", swingSpeed));
+        tvImpactForceValue.setText(getString(R.string.train_records_impact_force_value_format, impactForce));
+        tvSwingSpeedValue.setText(getString(R.string.train_records_swing_speed_value_format, swingSpeed));
 
         tvInsightBody.setText(buildInsightText(parsed, kneeAngle));
 
@@ -270,18 +276,23 @@ public class TrainRecordsActivity extends AppCompatActivity {
         int torsoLean = 8 + Math.min(8, parsed.count % 9);
         int extensionCm = parsed.avgScore >= 80 ? 3 : parsed.avgScore >= 60 ? 7 : 12;
 
-        tvChainLine1.setText("- Plant foot stability: Excellent (" + stability + "%)");
-        tvChainLine2.setText("- Torso lean: " + torsoLean + " deg (Within optimal range)");
-        tvChainLine3.setText("- Follow-through could be extended by " + extensionCm + " cm.");
+        tvChainLine1.setText(getString(R.string.train_records_chain_line_1_format, stability));
+        tvChainLine2.setText(getString(R.string.train_records_chain_line_2_format, torsoLean));
+        tvChainLine3.setText(getString(R.string.train_records_chain_line_3_format, extensionCm));
         tvEmptyRecords.setVisibility(View.GONE);
     }
 
     private String buildInsightText(ParsedRecord parsed, int kneeAngle) {
         String modeText = TextUtils.isEmpty(parsed.mode) ? "本次训练" : parsed.mode;
         String timeText = TextUtils.isEmpty(parsed.time) ? "最近一次" : parsed.time;
-        return timeText + " 的 " + modeText + " 训练中，检测到膝关节角度约 " + kneeAngle
-                + " deg，平均分 " + parsed.avgScore + "，动作次数 " + parsed.count
-                + "。建议保持核心稳定并延长随摆，以提升发力效率与动作连贯性。";
+        return getString(
+                R.string.train_records_insight_body_format,
+                timeText,
+                modeText,
+                kneeAngle,
+                parsed.avgScore,
+                parsed.count
+        );
     }
 
     private void bindVideo(String videoPath) {
@@ -290,7 +301,7 @@ public class TrainRecordsActivity extends AppCompatActivity {
 
         if (TextUtils.isEmpty(videoPath) || "无".equals(videoPath)) {
             tvVideoTotal.setText("00:00");
-            tvVideoToggle.setText("play");
+            tvVideoToggle.setText(R.string.common_play);
             Toast.makeText(this, getString(R.string.train_record_no_video), Toast.LENGTH_SHORT).show();
             return;
         }
@@ -298,7 +309,7 @@ public class TrainRecordsActivity extends AppCompatActivity {
         File file = new File(videoPath);
         if (!file.exists()) {
             tvVideoTotal.setText("00:00");
-            tvVideoToggle.setText("play");
+            tvVideoToggle.setText(R.string.common_play);
             Toast.makeText(this, getString(R.string.train_record_video_missing), Toast.LENGTH_SHORT).show();
             return;
         }
@@ -307,14 +318,14 @@ public class TrainRecordsActivity extends AppCompatActivity {
         vvPreview.setOnPreparedListener(mp -> {
             int duration = vvPreview.getDuration();
             tvVideoTotal.setText(formatMs(duration));
-            tvVideoToggle.setText("pause");
+            tvVideoToggle.setText(R.string.common_pause);
             vvPreview.start();
             startProgressUpdates();
         });
         vvPreview.setOnCompletionListener(mp -> {
             stopProgressUpdates();
             tvVideoCurrent.setText(tvVideoTotal.getText());
-            tvVideoToggle.setText("play");
+            tvVideoToggle.setText(R.string.common_play);
             updateProgressBar(1f);
         });
     }
@@ -375,18 +386,18 @@ public class TrainRecordsActivity extends AppCompatActivity {
     }
 
     private void resetPreviewPanel() {
-        tvKneeAngle.setText("KNEE ANGLE\n--");
-        tvHipRotation.setText("HIP ROTATION\n--");
-        tvPowerOutput.setText("POWER OUTPUT\n--");
-        tvImpactForceValue.setText("-- N");
-        tvSwingSpeedValue.setText("-- m/s");
-        tvInsightBody.setText("Select one record below to preview video and technical analysis.");
-        tvChainLine1.setText("- Plant foot stability: --");
-        tvChainLine2.setText("- Torso lean: --");
-        tvChainLine3.setText("- Follow-through: --");
+        tvKneeAngle.setText(R.string.train_records_knee_angle_placeholder);
+        tvHipRotation.setText(R.string.train_records_hip_rotation_placeholder);
+        tvPowerOutput.setText(R.string.train_records_power_output_placeholder);
+        tvImpactForceValue.setText(R.string.train_records_impact_force_placeholder);
+        tvSwingSpeedValue.setText(R.string.train_records_swing_speed_placeholder);
+        tvInsightBody.setText(R.string.train_records_select_hint);
+        tvChainLine1.setText(R.string.train_records_chain_line_1_placeholder);
+        tvChainLine2.setText(R.string.train_records_chain_line_2_placeholder);
+        tvChainLine3.setText(R.string.train_records_chain_line_3_placeholder);
         tvVideoCurrent.setText("00:00");
         tvVideoTotal.setText("00:00");
-        tvVideoToggle.setText("play");
+        tvVideoToggle.setText(R.string.common_play);
     }
 
     private void deleteRecordAt(int index) {
