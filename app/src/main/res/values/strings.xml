@@ -79,6 +79,8 @@
 
     <string name="train_save_text_default">保存</string>
     <string name="train_save_text_wait">视频保存中…</string>
+    <string name="train_save_text_uploading">上传分析中…</string>
+    <string name="train_save_text_done">已保存</string>
     <string name="train_start_text_default">开始识别</string>
     <string name="train_start_text_retry">重新录制</string>
 
@@ -92,6 +94,9 @@
     <string name="train_status_post_processing">视频状态：正在生成关键点视频</string>
     <string name="train_status_post_processing_progress">视频状态：关键点处理中 %1$d%%</string>
     <string name="train_status_post_process_failed">视频状态：关键点处理失败，已保留原视频</string>
+    <string name="train_status_uploading_feedback">视频状态：正在上传并请求后端分析</string>
+    <string name="train_status_backend_feedback_ready">视频状态：分析完成，已展示后端反馈</string>
+    <string name="train_status_backend_feedback_failed">视频状态：后端反馈失败，已使用本地评分</string>
 
     <string name="train_toast_need_camera_permission">请先允许相机权限</string>
     <string name="train_toast_camera_init_failed">相机初始化失败：%1$s</string>
@@ -107,6 +112,10 @@
     <string name="train_toast_pose_video_failed">关键点视频生成失败，已回退原视频</string>
     <string name="train_toast_wait_post_process">关键点视频还在处理中，请稍候</string>
     <string name="train_toast_record_discarded">本次训练已不保存</string>
+    <string name="train_toast_upload_file_missing">上传失败：找不到待上传视频</string>
+    <string name="train_toast_uploading_feedback">分析请求进行中，请稍候</string>
+    <string name="train_toast_backend_feedback_ready">已收到后端反馈</string>
+    <string name="train_toast_backend_feedback_failed">后端反馈失败，已使用本地结果保存</string>
 
     <string name="train_ai_coach_ready">AI虚拟教练：我在，开始后我会实时给你反馈</string>
     <string name="train_ai_coach_session_start">准备开始，请保持节奏与稳定性</string>
