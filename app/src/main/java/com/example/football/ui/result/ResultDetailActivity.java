@@ -3,15 +3,16 @@ package com.example.football.ui.result;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.GridLayout;
+import android.widget.LinearLayout;
 import android.widget.MediaController;
 import android.widget.TextView;
 import android.widget.VideoView;
 
-import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import com.example.football.R;
 
@@ -20,148 +21,319 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 public class ResultDetailActivity extends AppCompatActivity {
 
     public static final String EXTRA_VIDEO_PATH = "extra_video_path";
     public static final String EXTRA_FEEDBACK_JSON = "extra_feedback_json";
 
-    private static final Map<String, String> KEY_NAME_MAP = new HashMap<>();
-
-    static {
-        KEY_NAME_MAP.put("title", "标题");
-        KEY_NAME_MAP.put("action_summary", "动作总结");
-        KEY_NAME_MAP.put("overall_assessment", "整体评估");
-        KEY_NAME_MAP.put("overall_score", "综合评分");
-        KEY_NAME_MAP.put("score_breakdown", "分项评分");
-        KEY_NAME_MAP.put("strengths", "动作亮点");
-        KEY_NAME_MAP.put("improvements", "待提升项");
-        KEY_NAME_MAP.put("issue", "问题");
-        KEY_NAME_MAP.put("evidence", "依据");
-        KEY_NAME_MAP.put("suggestion", "建议");
-        KEY_NAME_MAP.put("training_drills", "训练建议");
-        KEY_NAME_MAP.put("cautions", "注意事项");
-    }
+    private TextView tvBack;
+    private TextView tvPageTitle;
+    private TextView tvOverallScore;
+    private TextView tvOverallAssessment;
+    private TextView tvActionSummary;
+    private TextView tvEmptyState;
+    private GridLayout gridScoreBreakdown;
+    private LinearLayout containerStrengths;
+    private LinearLayout containerImprovements;
+    private LinearLayout containerDrills;
+    private LinearLayout containerCautions;
+    private LinearLayout sectionVideo;
+    private VideoView videoView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_result_detail);
+        bindViews();
 
-        TextView backView = findViewById(R.id.tv_back);
-        VideoView videoView = findViewById(R.id.video_result);
-        TextView feedbackView = findViewById(R.id.tv_feedback_content);
-
-        backView.setOnClickListener(v -> finish());
+        tvBack.setOnClickListener(v -> finish());
 
         String videoPath = getIntent().getStringExtra(EXTRA_VIDEO_PATH);
         String feedbackJson = getIntent().getStringExtra(EXTRA_FEEDBACK_JSON);
 
-        bindVideo(videoView, videoPath);
-        bindFeedback(feedbackView, feedbackJson);
+        bindVideo(videoPath);
+        bindFeedback(feedbackJson);
     }
 
-    private void bindVideo(VideoView videoView, String videoPath) {
+    private void bindViews() {
+        tvBack = findViewById(R.id.tv_back);
+        tvPageTitle = findViewById(R.id.tv_page_title);
+        tvOverallScore = findViewById(R.id.tv_overall_score);
+        tvOverallAssessment = findViewById(R.id.tv_overall_assessment);
+        tvActionSummary = findViewById(R.id.tv_action_summary);
+        tvEmptyState = findViewById(R.id.tv_empty_state);
+        gridScoreBreakdown = findViewById(R.id.grid_score_breakdown);
+        containerStrengths = findViewById(R.id.container_strengths);
+        containerImprovements = findViewById(R.id.container_improvements);
+        containerDrills = findViewById(R.id.container_drills);
+        containerCautions = findViewById(R.id.container_cautions);
+        sectionVideo = findViewById(R.id.section_video);
+        videoView = findViewById(R.id.video_result);
+    }
+
+    private void bindVideo(String videoPath) {
         if (TextUtils.isEmpty(videoPath)) {
+            sectionVideo.setVisibility(View.GONE);
             return;
         }
         File videoFile = new File(videoPath);
         if (!videoFile.exists()) {
+            sectionVideo.setVisibility(View.GONE);
             return;
         }
+
         MediaController mediaController = new MediaController(this);
         mediaController.setAnchorView(videoView);
         videoView.setMediaController(mediaController);
         videoView.setVideoURI(Uri.fromFile(videoFile));
         videoView.seekTo(10);
+        sectionVideo.setVisibility(View.VISIBLE);
     }
 
-    private void bindFeedback(TextView feedbackView, String feedbackJson) {
+    private void bindFeedback(String feedbackJson) {
         if (TextUtils.isEmpty(feedbackJson)) {
-            feedbackView.setText("暂无分析反馈");
+            showEmpty(getString(R.string.result_feedback_empty));
             return;
         }
 
         try {
-            JSONObject jsonObject = new JSONObject(feedbackJson);
-            jsonObject.remove("provider_model");
-            jsonObject.remove("used_fallback");
-            feedbackView.setText(formatObject(jsonObject, "", 0));
+            JSONObject root = new JSONObject(feedbackJson);
+            JSONObject feedback = root.optJSONObject("feedback");
+            if (feedback == null) {
+                feedback = root;
+            }
+            feedback.remove("provider_model");
+            feedback.remove("used_fallback");
+
+            tvPageTitle.setText(readText(feedback, "title", getString(R.string.result_page_title)));
+            int overallScore = readInt(feedback, "overall_score", 0);
+            tvOverallScore.setText(String.valueOf(overallScore));
+            tvOverallAssessment.setText(readText(feedback, "overall_assessment", getString(R.string.result_assessment_fallback)));
+            tvActionSummary.setText(readText(feedback, "action_summary", getString(R.string.result_action_summary_fallback)));
+
+            bindScoreBreakdown(feedback.optJSONObject("score_breakdown"));
+            bindStringList(containerStrengths, feedback.optJSONArray("strengths"), R.layout.item_result_strength);
+            bindImprovements(feedback.optJSONArray("improvements"));
+            bindDrills(feedback.optJSONArray("training_drills"));
+            bindStringList(containerCautions, feedback.optJSONArray("cautions"), R.layout.item_result_caution);
+
+            tvEmptyState.setVisibility(View.GONE);
         } catch (Exception e) {
-            feedbackView.setText("反馈解析失败，请稍后重试。\n\n原始内容：\n" + feedbackJson);
+            showEmpty(getString(R.string.result_feedback_parse_failed));
         }
     }
 
-    private String formatObject(JSONObject object, String keyName, int depth) {
-        StringBuilder sb = new StringBuilder();
-        if (!TextUtils.isEmpty(keyName)) {
-            sb.append(indent(depth)).append(labelOf(keyName)).append("\n");
+    private void bindScoreBreakdown(JSONObject scoreBreakdown) {
+        gridScoreBreakdown.removeAllViews();
+        if (scoreBreakdown == null || scoreBreakdown.length() == 0) {
+            return;
         }
 
-        List<String> keys = new ArrayList<>();
-        Iterator<String> iterator = object.keys();
+        List<String> preferredOrder = Arrays.asList(
+                "摆动腿速度与幅度",
+                "触球质量",
+                "支撑腿稳定性",
+                "随摆完整度"
+        );
+
+        List<MetricItem> orderedItems = new ArrayList<>();
+        for (String key : preferredOrder) {
+            if (scoreBreakdown.has(key)) {
+                orderedItems.add(new MetricItem(key, readInt(scoreBreakdown, key, 0)));
+            }
+        }
+
+        Iterator<String> iterator = scoreBreakdown.keys();
         while (iterator.hasNext()) {
             String key = iterator.next();
-            if ("provider_model".equals(key) || "used_fallback".equals(key)) {
+            if (containsMetric(orderedItems, key)) {
                 continue;
             }
-            keys.add(key);
+            orderedItems.add(new MetricItem(key, readInt(scoreBreakdown, key, 0)));
         }
-        Collections.sort(keys);
 
-        for (String key : keys) {
-            Object value = object.opt(key);
-            if (value instanceof JSONObject) {
-                sb.append(indent(depth)).append("【").append(labelOf(key)).append("】\n");
-                sb.append(formatObject((JSONObject) value, "", depth + 1));
-            } else if (value instanceof JSONArray) {
-                sb.append(indent(depth)).append("【").append(labelOf(key)).append("】\n");
-                sb.append(formatArray((JSONArray) value, depth + 1));
-            } else {
-                sb.append(indent(depth))
-                        .append(labelOf(key))
-                        .append("：")
-                        .append(String.valueOf(value))
-                        .append("\n");
-            }
+        LayoutInflater inflater = LayoutInflater.from(this);
+        for (MetricItem item : orderedItems) {
+            View card = inflater.inflate(R.layout.item_result_metric, gridScoreBreakdown, false);
+            TextView tvName = card.findViewById(R.id.tv_metric_name);
+            TextView tvScore = card.findViewById(R.id.tv_metric_score);
+
+            tvName.setText(item.name);
+            tvScore.setText(String.valueOf(item.score));
+            card.setBackgroundResource(item.score < 60
+                    ? R.drawable.bg_result_metric_card_warning
+                    : R.drawable.bg_result_metric_card);
+
+            GridLayout.LayoutParams params = new GridLayout.LayoutParams();
+            params.width = 0;
+            params.height = GridLayout.LayoutParams.WRAP_CONTENT;
+            params.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
+            params.setMargins(dp(6), dp(6), dp(6), dp(6));
+            card.setLayoutParams(params);
+            gridScoreBreakdown.addView(card);
         }
-        return sb.toString().trim();
     }
 
-    private String formatArray(JSONArray array, int depth) {
-        StringBuilder sb = new StringBuilder();
+    private void bindImprovements(JSONArray improvements) {
+        containerImprovements.removeAllViews();
+        if (improvements == null || improvements.length() == 0) {
+            return;
+        }
+
+        LayoutInflater inflater = LayoutInflater.from(this);
+        for (int i = 0; i < improvements.length(); i++) {
+            JSONObject item = improvements.optJSONObject(i);
+            if (item == null) {
+                continue;
+            }
+            View card = inflater.inflate(R.layout.item_result_improvement, containerImprovements, false);
+            TextView tvIssue = card.findViewById(R.id.tv_improvement_issue);
+            TextView tvPriority = card.findViewById(R.id.tv_improvement_priority);
+            TextView tvEvidence = card.findViewById(R.id.tv_improvement_evidence);
+            TextView tvSuggestion = card.findViewById(R.id.tv_improvement_suggestion);
+
+            tvIssue.setText(readText(item, "issue", getString(R.string.result_improvement_default_issue)));
+            String evidence = readText(item, "evidence", "");
+            String suggestion = readText(item, "suggestion", "");
+
+            if (TextUtils.isEmpty(evidence)) {
+                tvEvidence.setVisibility(View.GONE);
+            } else {
+                tvEvidence.setText(getString(R.string.result_bullet_content_format, evidence));
+            }
+
+            if (TextUtils.isEmpty(suggestion)) {
+                tvSuggestion.setVisibility(View.GONE);
+            } else {
+                tvSuggestion.setText(getString(R.string.result_bullet_content_format, suggestion));
+            }
+
+            tvPriority.setVisibility(i == 0 ? View.VISIBLE : View.GONE);
+            containerImprovements.addView(card);
+        }
+    }
+
+    private void bindDrills(JSONArray drills) {
+        containerDrills.removeAllViews();
+        if (drills == null || drills.length() == 0) {
+            return;
+        }
+
+        LayoutInflater inflater = LayoutInflater.from(this);
+        for (int i = 0; i < drills.length(); i++) {
+            String drill = drills.optString(i, "");
+            if (TextUtils.isEmpty(drill)) {
+                continue;
+            }
+            View card = inflater.inflate(R.layout.item_result_drill, containerDrills, false);
+            TextView tvTitle = card.findViewById(R.id.tv_drill_title);
+            TextView tvMeta = card.findViewById(R.id.tv_drill_meta);
+
+            DrillItem drillItem = splitDrillText(drill);
+            tvTitle.setText(drillItem.title);
+            tvMeta.setText(drillItem.meta);
+            containerDrills.addView(card);
+        }
+    }
+
+    private void bindStringList(@NonNull LinearLayout container, JSONArray array, int itemLayoutRes) {
+        container.removeAllViews();
+        if (array == null || array.length() == 0) {
+            return;
+        }
+
+        LayoutInflater inflater = LayoutInflater.from(this);
         for (int i = 0; i < array.length(); i++) {
-            Object item = array.opt(i);
-            if (item instanceof JSONObject) {
-                sb.append(indent(depth)).append(i + 1).append(".\n");
-                sb.append(formatObject((JSONObject) item, "", depth + 1)).append("\n");
-            } else if (item instanceof JSONArray) {
-                sb.append(indent(depth)).append(i + 1).append(".\n");
-                sb.append(formatArray((JSONArray) item, depth + 1)).append("\n");
-            } else {
-                sb.append(indent(depth)).append("- ").append(String.valueOf(item)).append("\n");
+            String content = array.optString(i, "");
+            if (TextUtils.isEmpty(content)) {
+                continue;
+            }
+            View itemView = inflater.inflate(itemLayoutRes, container, false);
+            TextView textView = itemView.findViewById(R.id.tv_content);
+            textView.setText(content);
+            container.addView(itemView);
+        }
+    }
+
+    private void showEmpty(String message) {
+        tvEmptyState.setVisibility(View.VISIBLE);
+        tvEmptyState.setText(message);
+    }
+
+    private DrillItem splitDrillText(String drill) {
+        int index = drill.indexOf("（");
+        if (index > 0 && drill.endsWith("）")) {
+            return new DrillItem(drill.substring(0, index), drill.substring(index + 1, drill.length() - 1));
+        }
+        return new DrillItem(drill, getString(R.string.result_drill_meta_default));
+    }
+
+    private boolean containsMetric(List<MetricItem> items, String key) {
+        for (MetricItem item : items) {
+            if (item.name.equals(key)) {
+                return true;
             }
         }
-        return sb.toString().trim();
+        return false;
     }
 
-    private String indent(int depth) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < depth; i++) {
-            sb.append("  ");
+    private int readInt(JSONObject jsonObject, String key, int fallback) {
+        if (jsonObject == null || !jsonObject.has(key)) {
+            return fallback;
         }
-        return sb.toString();
+        try {
+            Object value = jsonObject.get(key);
+            if (value instanceof Number) {
+                return clampScore(((Number) value).intValue());
+            }
+            String raw = String.valueOf(value).replaceAll("[^0-9-]", "");
+            if (TextUtils.isEmpty(raw)) {
+                return fallback;
+            }
+            return clampScore(Integer.parseInt(raw));
+        } catch (Exception ignored) {
+            return fallback;
+        }
     }
 
-    private String labelOf(String key) {
-        if (KEY_NAME_MAP.containsKey(key)) {
-            return KEY_NAME_MAP.get(key);
+    private String readText(JSONObject jsonObject, String key, String fallback) {
+        if (jsonObject == null || !jsonObject.has(key)) {
+            return fallback;
         }
-        return key.replace("_", " ");
+        String value = jsonObject.optString(key, "").trim();
+        return value.isEmpty() ? fallback : value;
+    }
+
+    private int clampScore(int value) {
+        return Math.max(0, Math.min(100, value));
+    }
+
+    private int dp(int value) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(value * density);
+    }
+
+    private static class MetricItem {
+        final String name;
+        final int score;
+
+        MetricItem(String name, int score) {
+            this.name = name;
+            this.score = score;
+        }
+    }
+
+    private static class DrillItem {
+        final String title;
+        final String meta;
+
+        DrillItem(String title, String meta) {
+            this.title = title;
+            this.meta = meta;
+        }
     }
 }
