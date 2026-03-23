@@ -78,6 +78,18 @@
         android:textColor="#FFFFFF"
         android:textSize="18sp" />
 
+    <!-- 3.1 上传已有视频分析按钮 -->
+    <Button
+        android:id="@+id/btn_upload_existing_video_analyze"
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:layout_marginHorizontal="15dp"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/bg_train_button_retry"
+        android:text="@string/train_upload_existing_video"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp" />
+
     <!-- 4. 识别中结果区 -->
     <LinearLayout
         android:id="@+id/ll_recognizing"
