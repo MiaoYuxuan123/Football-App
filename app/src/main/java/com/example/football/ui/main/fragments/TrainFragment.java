@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.text.TextUtils;
@@ -60,7 +61,9 @@ import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker;
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -85,6 +88,7 @@ public class TrainFragment extends Fragment {
     private PreviewView previewView;
     private RadioGroup rgMode;
     private Button btnStartRecognize, btnStopRecognize, btnSaveResult, btnAnalyzeResult, btnDiscardResult;
+    private Button btnUploadExistingVideoAnalyze;
     private LinearLayout llRecognizing, llRecognized;
     private TextView tvCurrentAction, tvConfidence, tvScore, tvTotalCount, tvAvgScore, tvSuggestion;
     private TextView tvRecordingState;
@@ -137,6 +141,18 @@ public class TrainFragment extends Fragment {
                 }
             });
 
+    private final ActivityResultLauncher<String> pickVideoLauncher =
+            registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+                if (!isAdded()) {
+                    return;
+                }
+                if (uri == null) {
+                    Toast.makeText(requireContext(), getString(R.string.train_toast_pick_video_cancelled), Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                importLocalVideoAndAnalyze(uri);
+            });
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -181,6 +197,7 @@ public class TrainFragment extends Fragment {
         btnSaveResult = view.findViewById(R.id.btn_save_result);
         btnAnalyzeResult = view.findViewById(R.id.btn_analyze_result);
         btnDiscardResult = view.findViewById(R.id.btn_not_save_result);
+        btnUploadExistingVideoAnalyze = view.findViewById(R.id.btn_upload_existing_video_analyze);
         llRecognizing = view.findViewById(R.id.ll_recognizing);
         llRecognized = view.findViewById(R.id.ll_recognized);
         tvCurrentAction = view.findViewById(R.id.tv_current_action);
@@ -928,7 +945,101 @@ public class TrainFragment extends Fragment {
             uploadBackendFeedbackAndAnalyze(currentSessionId, videoForAnalyze);
         });
 
+        btnUploadExistingVideoAnalyze.setOnClickListener(v -> {
+            if (!isAdded()) {
+                return;
+            }
+            if (isRecognizing) {
+                Toast.makeText(requireContext(), getString(R.string.train_toast_wait_video_finalize), Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (isPostProcessing) {
+                Toast.makeText(requireContext(), getString(R.string.train_toast_wait_post_process), Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (isUploadingFeedback) {
+                Toast.makeText(requireContext(), getString(R.string.train_toast_uploading_feedback), Toast.LENGTH_SHORT).show();
+                return;
+            }
+            pickVideoLauncher.launch("video/*");
+        });
+
         btnDiscardResult.setOnClickListener(v -> discardCurrentSession());
+    }
+
+    private void importLocalVideoAndAnalyze(@NonNull Uri sourceUri) {
+        currentSessionId++;
+        final int sessionId = currentSessionId;
+
+        isRecognizing = false;
+        saveRequestedForSession = false;
+        isPostProcessing = false;
+        isUploadingFeedback = false;
+        actionCount = 0;
+        totalScore = 0;
+        finalizedAvgScore = 0;
+        videoFinalizeDone = false;
+        pendingVideoPath = "";
+        lastVideoPath = "";
+
+        btnStartRecognize.setVisibility(View.VISIBLE);
+        llRecognizing.setVisibility(View.GONE);
+        llRecognized.setVisibility(View.VISIBLE);
+        tvTotalCount.setText(getString(R.string.train_total_count_format, currentMode, 0));
+        tvAvgScore.setText(getString(R.string.train_avg_score_format, 0));
+        tvSuggestion.setText(buildFallbackSuggestionText());
+        updateRecordStatus(getString(R.string.train_status_importing_local_video), false, getString(R.string.train_save_text_uploading));
+
+        postProcessExecutor.execute(() -> {
+            String copiedPath = copyPickedVideoToAppStorage(sourceUri);
+            if (!isAdded()) {
+                return;
+            }
+            requireActivity().runOnUiThread(() -> {
+                if (sessionId != currentSessionId || !isAdded()) {
+                    return;
+                }
+                if (TextUtils.isEmpty(copiedPath)) {
+                    updateRecordStatus(getString(R.string.train_status_idle), false, getString(R.string.train_save_text_default));
+                    Toast.makeText(requireContext(), getString(R.string.train_toast_pick_video_copy_failed), Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                pendingVideoPath = copiedPath;
+                lastVideoPath = copiedPath;
+                videoFinalizeDone = true;
+                uploadBackendFeedbackAndAnalyze(sessionId, copiedPath);
+            });
+        });
+    }
+
+    private String copyPickedVideoToAppStorage(@NonNull Uri sourceUri) {
+        String outputPath = repository.createTrainingVideoPath();
+        if (TextUtils.isEmpty(outputPath)) {
+            return "";
+        }
+        File outFile = new File(outputPath);
+        File parent = outFile.getParentFile();
+        if (parent == null || (!parent.exists() && !parent.mkdirs())) {
+            return "";
+        }
+
+        try (InputStream in = requireContext().getContentResolver().openInputStream(sourceUri);
+             FileOutputStream out = new FileOutputStream(outFile)) {
+            if (in == null) {
+                return "";
+            }
+            byte[] buffer = new byte[8 * 1024];
+            int len;
+            while ((len = in.read(buffer)) > 0) {
+                out.write(buffer, 0, len);
+            }
+            out.flush();
+            return outFile.getAbsolutePath();
+        } catch (Exception e) {
+            Log.e(TAG, "copyPickedVideoToAppStorage failed", e);
+            safeDeleteFile(outFile.getAbsolutePath());
+            return "";
+        }
     }
 
     public void applyPresetMode(@Nullable String presetMode) {

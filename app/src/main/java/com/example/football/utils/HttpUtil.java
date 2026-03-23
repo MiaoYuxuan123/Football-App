@@ -13,10 +13,20 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URLConnection;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class HttpUtil {
     // 全局OkHttpClient实例（复用，避免重复创建）
     private static final OkHttpClient OK_HTTP_CLIENT = new OkHttpClient();
+
+    // 上传/分析通常耗时更长，避免默认超时导致前端过早报错。
+    private static final OkHttpClient UPLOAD_HTTP_CLIENT = OK_HTTP_CLIENT.newBuilder()
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .writeTimeout(3, TimeUnit.MINUTES)
+            .readTimeout(3, TimeUnit.MINUTES)
+            .callTimeout(4, TimeUnit.MINUTES)
+            .retryOnConnectionFailure(true)
+            .build();
 
     /**
      * GET请求
@@ -89,7 +99,7 @@ public class HttpUtil {
     ) {
         if (file == null || !file.exists()) {
             if (callback != null) {
-                callback.onFailure(OK_HTTP_CLIENT.newCall(new Request.Builder().url(url).build()),
+                callback.onFailure(UPLOAD_HTTP_CLIENT.newCall(new Request.Builder().url(url).build()),
                         new IOException("upload file does not exist"));
             }
             return;
@@ -132,6 +142,6 @@ public class HttpUtil {
             }
         }
 
-        OK_HTTP_CLIENT.newCall(requestBuilder.build()).enqueue(callback);
+        UPLOAD_HTTP_CLIENT.newCall(requestBuilder.build()).enqueue(callback);
     }
 }

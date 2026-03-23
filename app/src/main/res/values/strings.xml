@@ -83,9 +83,11 @@
     <string name="train_save_text_done">已保存</string>
     <string name="train_start_text_default">开始识别</string>
     <string name="train_start_text_retry">重新录制</string>
+    <string name="train_upload_existing_video">上传已有视频分析</string>
 
     <string name="train_status_idle">视频状态：待开始录制</string>
     <string name="train_status_recording">视频状态：录制中</string>
+    <string name="train_status_importing_local_video">视频状态：正在导入本机视频</string>
     <string name="train_status_saving">视频状态：录制结束，正在封装视频</string>
     <string name="train_status_wait_finalize">视频状态：录制结束，正在封装视频</string>
     <string name="train_status_wait_decision">视频状态：已完成录制，请选择保存或不保存</string>
@@ -113,6 +115,8 @@
     <string name="train_toast_wait_post_process">关键点视频还在处理中，请稍候</string>
     <string name="train_toast_record_discarded">本次训练已不保存</string>
     <string name="train_toast_upload_file_missing">上传失败：找不到待上传视频</string>
+    <string name="train_toast_pick_video_cancelled">已取消选择视频</string>
+    <string name="train_toast_pick_video_copy_failed">导入视频失败，请重试</string>
     <string name="train_toast_uploading_feedback">分析请求进行中，请稍候</string>
     <string name="train_toast_backend_feedback_ready">已收到后端反馈</string>
     <string name="train_toast_backend_feedback_failed">后端反馈失败，已使用本地结果保存</string>
