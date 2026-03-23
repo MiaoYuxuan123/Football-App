@@ -7,14 +7,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.GridLayout;
 import android.widget.LinearLayout;
-import android.widget.MediaController;
 import android.widget.TextView;
-import android.widget.VideoView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.football.R;
+import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.MediaItem;
+import com.google.android.exoplayer2.ui.PlayerView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -40,9 +41,9 @@ public class ResultDetailActivity extends AppCompatActivity {
     private LinearLayout containerStrengths;
     private LinearLayout containerImprovements;
     private LinearLayout containerDrills;
-    private LinearLayout containerCautions;
     private LinearLayout sectionVideo;
-    private VideoView videoView;
+    private PlayerView playerView;
+    private ExoPlayer exoPlayer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,27 +71,29 @@ public class ResultDetailActivity extends AppCompatActivity {
         containerStrengths = findViewById(R.id.container_strengths);
         containerImprovements = findViewById(R.id.container_improvements);
         containerDrills = findViewById(R.id.container_drills);
-        containerCautions = findViewById(R.id.container_cautions);
         sectionVideo = findViewById(R.id.section_video);
-        videoView = findViewById(R.id.video_result);
+        playerView = findViewById(R.id.video_result);
     }
 
     private void bindVideo(String videoPath) {
         if (TextUtils.isEmpty(videoPath)) {
             sectionVideo.setVisibility(View.GONE);
+            releasePlayer();
             return;
         }
         File videoFile = new File(videoPath);
         if (!videoFile.exists()) {
             sectionVideo.setVisibility(View.GONE);
+            releasePlayer();
             return;
         }
 
-        MediaController mediaController = new MediaController(this);
-        mediaController.setAnchorView(videoView);
-        videoView.setMediaController(mediaController);
-        videoView.setVideoURI(Uri.fromFile(videoFile));
-        videoView.seekTo(10);
+        releasePlayer();
+        exoPlayer = new ExoPlayer.Builder(this).build();
+        playerView.setPlayer(exoPlayer);
+        exoPlayer.setMediaItem(MediaItem.fromUri(Uri.fromFile(videoFile)));
+        exoPlayer.prepare();
+        exoPlayer.play();
         sectionVideo.setVisibility(View.VISIBLE);
     }
 
@@ -119,7 +122,6 @@ public class ResultDetailActivity extends AppCompatActivity {
             bindStringList(containerStrengths, feedback.optJSONArray("strengths"), R.layout.item_result_strength);
             bindImprovements(feedback.optJSONArray("improvements"));
             bindDrills(feedback.optJSONArray("training_drills"));
-            bindStringList(containerCautions, feedback.optJSONArray("cautions"), R.layout.item_result_caution);
 
             tvEmptyState.setVisibility(View.GONE);
         } catch (Exception e) {
@@ -315,6 +317,27 @@ public class ResultDetailActivity extends AppCompatActivity {
     private int dp(int value) {
         float density = getResources().getDisplayMetrics().density;
         return Math.round(value * density);
+    }
+
+    private void releasePlayer() {
+        if (exoPlayer != null) {
+            exoPlayer.release();
+            exoPlayer = null;
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (exoPlayer != null) {
+            exoPlayer.pause();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        releasePlayer();
     }
 
     private static class MetricItem {
