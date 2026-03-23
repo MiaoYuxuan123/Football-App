@@ -181,8 +181,10 @@ public class TrainRecordsActivity extends AppCompatActivity {
         TextView tv = row.findViewById(R.id.tv_record_content);
         TextView btnShare = row.findViewById(R.id.tv_record_share);
         TextView btnDelete = row.findViewById(R.id.tv_record_delete);
+        TextView tvScore = row.findViewById(R.id.tv_record_score);
 
         tv.setText(resolveRawText(record));
+        tvScore.setText(String.valueOf(record.avgScore));
         row.setAlpha(selected ? 1f : 0.92f);
 
         View.OnClickListener previewClick = v -> {

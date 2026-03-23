@@ -191,6 +191,7 @@
                         android:textSize="14sp" />
 
                     <TextView
+                        android:id="@+id/tv_avg_score"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
@@ -287,9 +288,10 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/tv_last_score"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="92"
+                        android:text="--"
                         android:textColor="#17B95B"
                         android:textSize="34sp"
                         android:textStyle="bold" />

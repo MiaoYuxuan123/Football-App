@@ -226,6 +226,21 @@ public class AppRepositoryImpl implements AppRepository {
         return imported;
     }
 
+    @Override
+    public float getAvgScore(String account) {
+        List<TrainRecord> records = getTrainRecordList(account);
+        if (records == null || records.isEmpty()) {
+            return 0f;
+        }
+        float sum = 0f;
+        int count = 0;
+        for (TrainRecord record : records) {
+            sum += record.avgScore;
+            count++;
+        }
+        return count == 0 ? 0f : sum / count;
+    }
+
     private String buildTrainRecordsKey(String account) {
         return KEY_TRAIN_RECORDS_PREFIX + normalizeAccount(account);
     }

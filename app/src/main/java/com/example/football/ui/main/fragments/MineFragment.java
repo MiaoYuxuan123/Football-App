@@ -21,12 +21,14 @@ import androidx.fragment.app.Fragment;
 
 import com.example.football.R;
 import com.example.football.data.AppRepository;
+import com.example.football.data.AppRepositoryImpl;
 import com.example.football.data.RepositoryProvider;
 import com.example.football.data.TrainingRefreshNotifier;
 import com.example.football.ui.login.LoginActivity;
 import com.example.football.ui.train.TrainRecordsActivity;
 
 import java.io.File;
+import java.util.Locale;
 
 public class MineFragment extends Fragment {
 
@@ -63,6 +65,22 @@ public class MineFragment extends Fragment {
             btnUploadAvatar.setOnClickListener(v -> avatarPickerLauncher.launch("image/*"));
         }
         ivAvatar.setOnClickListener(v -> avatarPickerLauncher.launch("image/*"));
+
+        // 新增：显示平均分数
+        TextView tvAvgScore = view.findViewById(R.id.tv_avg_score);
+        float avgScore = ((AppRepositoryImpl)repository).getAvgScore(currentAccount);
+        if (avgScore <= 0.01f) {
+            tvAvgScore.setText("--");
+        } else {
+            tvAvgScore.setText(String.format(Locale.getDefault(), "%.1f", avgScore));
+        }
+        // 新增：训练记录区块分数显示
+        TextView tvLastScore = view.findViewById(R.id.tv_last_score);
+        if (avgScore <= 0.01f) {
+            tvLastScore.setText("0");
+        } else {
+            tvLastScore.setText(String.format(Locale.getDefault(), "%.1f", avgScore));
+        }
 
         view.findViewById(R.id.btn_train_records).setOnClickListener(v -> {
             Intent intent = new Intent(requireContext(), TrainRecordsActivity.class);

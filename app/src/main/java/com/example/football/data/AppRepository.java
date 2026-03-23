@@ -53,4 +53,7 @@ public interface AppRepository {
 
     // Import picked images to app-managed star photo folder.
     int importStarPhotos(List<Uri> uris);
+
+    // 获取当前账号的平均分数
+    float getAvgScore(String account);
 }
