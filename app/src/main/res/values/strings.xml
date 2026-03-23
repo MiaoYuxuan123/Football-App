@@ -326,4 +326,24 @@
     <string name="badge_hall_subtitle">已解锁勋章会以彩色发光展示，未解锁勋章以灰色显示。继续训练，逐个点亮你的荣誉墙。</string>
     <string name="badge_hall_status_unlocked">UNLOCKED</string>
     <string name="badge_hall_status_locked">LOCKED</string>
+
+    <string name="result_back">←</string>
+    <string name="result_page_title">分析反馈</string>
+    <string name="result_score_default">0</string>
+    <string name="result_overall_feedback">整体动作反馈</string>
+    <string name="result_metrics_title">指标详情</string>
+    <string name="result_metrics_trend">查看趋势</string>
+    <string name="result_strengths_title">优势表现</string>
+    <string name="result_improvements_title">改进建议</string>
+    <string name="result_drills_title">推荐训练课</string>
+    <string name="result_cautions_title">专家提示</string>
+    <string name="result_video_title">原始视频回放</string>
+    <string name="result_feedback_empty">暂无分析反馈</string>
+    <string name="result_feedback_parse_failed">反馈解析失败，请稍后重试</string>
+    <string name="result_assessment_fallback">整体动作已完成，请继续保持训练节奏。</string>
+    <string name="result_action_summary_fallback">暂无动作总结</string>
+    <string name="result_improvement_default_issue">待提升项</string>
+    <string name="result_bullet_content_format">• %1$s</string>
+    <string name="result_priority_high">高优先级</string>
+    <string name="result_drill_meta_default">专项训练</string>
 </resources>
