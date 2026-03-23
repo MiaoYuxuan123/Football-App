@@ -80,7 +80,7 @@
     <string name="train_save_text_default">保存</string>
     <string name="train_save_text_wait">视频保存中…</string>
     <string name="train_save_text_uploading">上传分析中…</string>
-    <string name="train_save_text_done">已保存</string>
+    <string name="train_save_text_done">保存</string>
     <string name="train_start_text_default">开始识别</string>
     <string name="train_start_text_retry">重新录制</string>
     <string name="train_upload_existing_video">上传已有视频分析</string>
@@ -352,4 +352,5 @@
     <string name="result_bullet_content_format">• %1$s</string>
     <string name="result_priority_high">高优先级</string>
     <string name="result_drill_meta_default">专项训练</string>
+    <string name="train_records_feedback_empty">该训练记录暂无后端反馈报告</string>
 </resources>

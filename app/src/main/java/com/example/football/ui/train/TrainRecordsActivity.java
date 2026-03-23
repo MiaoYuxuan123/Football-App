@@ -9,11 +9,13 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.GridLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -23,8 +25,13 @@ import com.example.football.data.RepositoryProvider;
 import com.example.football.data.TrainingRefreshNotifier;
 import com.example.football.database.entity.TrainRecord;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
@@ -34,15 +41,14 @@ public class TrainRecordsActivity extends AppCompatActivity {
 
     private LinearLayout layoutRecordsContainer;
     private TextView tvEmptyRecords;
-    private TextView tvKneeAngle;
-    private TextView tvHipRotation;
-    private TextView tvPowerOutput;
-    private TextView tvImpactForceValue;
-    private TextView tvSwingSpeedValue;
-    private TextView tvInsightBody;
-    private TextView tvChainLine1;
-    private TextView tvChainLine2;
-    private TextView tvChainLine3;
+    private TextView tvOverallScore;
+    private TextView tvOverallAssessment;
+    private TextView tvActionSummary;
+    private TextView tvReportEmpty;
+    private GridLayout gridScoreBreakdown;
+    private LinearLayout containerStrengths;
+    private LinearLayout containerImprovements;
+    private LinearLayout containerDrills;
     private TextView tvVideoCurrent;
     private TextView tvVideoTotal;
     private TextView tvVideoToggle;
@@ -74,16 +80,14 @@ public class TrainRecordsActivity extends AppCompatActivity {
 
         tvEmptyRecords = findViewById(R.id.tv_empty_records);
         layoutRecordsContainer = findViewById(R.id.layout_records_container);
-
-        tvKneeAngle = findViewById(R.id.tv_knee_angle);
-        tvHipRotation = findViewById(R.id.tv_hip_rotation);
-        tvPowerOutput = findViewById(R.id.tv_power_output);
-        tvImpactForceValue = findViewById(R.id.tv_impact_force_value);
-        tvSwingSpeedValue = findViewById(R.id.tv_swing_speed_value);
-        tvInsightBody = findViewById(R.id.tv_insight_body);
-        tvChainLine1 = findViewById(R.id.tv_chain_line_1);
-        tvChainLine2 = findViewById(R.id.tv_chain_line_2);
-        tvChainLine3 = findViewById(R.id.tv_chain_line_3);
+        tvOverallScore = findViewById(R.id.tv_overall_score);
+        tvOverallAssessment = findViewById(R.id.tv_overall_assessment);
+        tvActionSummary = findViewById(R.id.tv_action_summary);
+        tvReportEmpty = findViewById(R.id.tv_report_empty_state);
+        gridScoreBreakdown = findViewById(R.id.grid_score_breakdown);
+        containerStrengths = findViewById(R.id.container_strengths);
+        containerImprovements = findViewById(R.id.container_improvements);
+        containerDrills = findViewById(R.id.container_drills);
         tvVideoCurrent = findViewById(R.id.tv_video_current);
         tvVideoTotal = findViewById(R.id.tv_video_total);
         tvVideoToggle = findViewById(R.id.tv_video_toggle);
@@ -184,7 +188,7 @@ public class TrainRecordsActivity extends AppCompatActivity {
         TextView tvScore = row.findViewById(R.id.tv_record_score);
 
         tv.setText(resolveRawText(record));
-        tvScore.setText(String.valueOf(record.avgScore));
+        tvScore.setText(String.valueOf(resolveDisplayScore(record)));
         row.setAlpha(selected ? 1f : 0.92f);
 
         View.OnClickListener previewClick = v -> {
@@ -208,8 +212,8 @@ public class TrainRecordsActivity extends AppCompatActivity {
     }
 
     private void bindRecordToPreview(TrainRecord record) {
+        bindFeedback(record == null ? "" : record.feedbackJson);
         ParsedRecord parsed = toParsedRecord(record);
-        updateMetrics(parsed);
         bindVideo(parsed.videoPath);
     }
 
@@ -217,12 +221,30 @@ public class TrainRecordsActivity extends AppCompatActivity {
         TrainRecord fallback = TrainRecord.fromRawText(resolveRawText(record));
         ParsedRecord parsed = new ParsedRecord();
         parsed.raw = resolveRawText(record);
-        parsed.mode = firstNonEmpty(record.mode, fallback.mode, "训练");
-        parsed.count = record.actionCount > 0 ? record.actionCount : fallback.actionCount;
-        parsed.avgScore = record.avgScore > 0 ? record.avgScore : fallback.avgScore;
-        parsed.videoPath = firstNonEmpty(record.videoPath, fallback.videoPath, "");
-        parsed.time = firstNonEmpty(record.createdAt, fallback.createdAt, "");
+        parsed.mode = firstNonEmpty(record == null ? "" : record.mode, fallback.mode, "训练");
+        parsed.count = record != null && record.actionCount > 0 ? record.actionCount : fallback.actionCount;
+        parsed.avgScore = resolveDisplayScore(record);
+        parsed.videoPath = firstNonEmpty(record == null ? "" : record.videoPath, fallback.videoPath, "");
+        parsed.time = firstNonEmpty(record == null ? "" : record.createdAt, fallback.createdAt, "");
         return parsed;
+    }
+
+    private int resolveDisplayScore(TrainRecord record) {
+        int fallback = 0;
+        if (record != null) {
+            fallback = Math.max(0, record.avgScore);
+        }
+        if (record == null || TextUtils.isEmpty(record.feedbackJson)) {
+            return fallback;
+        }
+        try {
+            JSONObject root = new JSONObject(record.feedbackJson);
+            JSONObject feedback = root.optJSONObject("feedback");
+            JSONObject source = feedback == null ? root : feedback;
+            return readInt(source, "overall_score", fallback);
+        } catch (Exception ignored) {
+            return fallback;
+        }
     }
 
     private String firstNonEmpty(String... values) {
@@ -251,71 +273,246 @@ public class TrainRecordsActivity extends AppCompatActivity {
                 + " | 均分:" + Math.max(0, record.avgScore) + " | 视频:" + video;
     }
 
-    private void updateMetrics(ParsedRecord parsed) {
-        int kneeAngle = 95 + Math.min(30, parsed.avgScore / 3);
-        String hipState = parsed.avgScore >= 70
-                ? getString(R.string.train_records_state_active)
-                : getString(R.string.train_records_state_building);
-        String powerState = parsed.avgScore >= 85
-                ? getString(R.string.train_records_state_high)
-                : parsed.avgScore >= 60
-                ? getString(R.string.train_records_state_medium)
-                : getString(R.string.train_records_state_low);
 
-        int impactForce = 620 + parsed.avgScore * 3 + parsed.count * 4;
-        double swingSpeed = 9.8 + (parsed.avgScore / 20.0) + (parsed.count / 15.0);
+    private void bindFeedback(String feedbackJson) {
+        clearReportViews();
+        if (TextUtils.isEmpty(feedbackJson)) {
+            showReportEmpty(getString(R.string.train_records_feedback_empty));
+            return;
+        }
 
-        tvKneeAngle.setText(getString(R.string.train_records_knee_angle_value_format, kneeAngle));
-        tvHipRotation.setText(getString(R.string.train_records_hip_rotation_value_format, hipState));
-        tvPowerOutput.setText(getString(R.string.train_records_power_output_value_format, powerState));
+        try {
+            JSONObject root = new JSONObject(feedbackJson);
+            JSONObject feedback = root.optJSONObject("feedback");
+            if (feedback == null) {
+                feedback = root;
+            }
+            feedback.remove("provider_model");
+            feedback.remove("used_fallback");
 
-        tvImpactForceValue.setText(getString(R.string.train_records_impact_force_value_format, impactForce));
-        tvSwingSpeedValue.setText(getString(R.string.train_records_swing_speed_value_format, swingSpeed));
+            int overallScore = readInt(feedback, "overall_score", 0);
+            tvOverallScore.setText(String.valueOf(overallScore));
+            tvOverallAssessment.setText(readText(feedback, "overall_assessment", getString(R.string.result_assessment_fallback)));
+            tvActionSummary.setText(readText(feedback, "action_summary", getString(R.string.result_action_summary_fallback)));
 
-        tvInsightBody.setText(buildInsightText(parsed, kneeAngle));
+            bindScoreBreakdown(feedback.optJSONObject("score_breakdown"));
+            bindStringList(containerStrengths, feedback.optJSONArray("strengths"), R.layout.item_result_strength);
+            bindImprovements(feedback.optJSONArray("improvements"));
+            bindDrills(feedback.optJSONArray("training_drills"));
 
-        int stability = Math.max(72, Math.min(99, 70 + parsed.avgScore / 2));
-        int torsoLean = 8 + Math.min(8, parsed.count % 9);
-        int extensionCm = parsed.avgScore >= 80 ? 3 : parsed.avgScore >= 60 ? 7 : 12;
-
-        tvChainLine1.setText(getString(R.string.train_records_chain_line_1_format, stability));
-        tvChainLine2.setText(getString(R.string.train_records_chain_line_2_format, torsoLean));
-        tvChainLine3.setText(getString(R.string.train_records_chain_line_3_format, extensionCm));
-        tvEmptyRecords.setVisibility(View.GONE);
+            tvReportEmpty.setVisibility(View.GONE);
+        } catch (Exception e) {
+            showReportEmpty(getString(R.string.result_feedback_parse_failed));
+        }
     }
 
-    private String buildInsightText(ParsedRecord parsed, int kneeAngle) {
-        String modeText = TextUtils.isEmpty(parsed.mode) ? "本次训练" : parsed.mode;
-        String timeText = TextUtils.isEmpty(parsed.time) ? "最近一次" : parsed.time;
-        return getString(
-                R.string.train_records_insight_body_format,
-                timeText,
-                modeText,
-                kneeAngle,
-                parsed.avgScore,
-                parsed.count
+    private void clearReportViews() {
+        tvOverallScore.setText(getString(R.string.result_score_default));
+        tvOverallAssessment.setText(getString(R.string.result_assessment_fallback));
+        tvActionSummary.setText(getString(R.string.result_action_summary_fallback));
+        gridScoreBreakdown.removeAllViews();
+        containerStrengths.removeAllViews();
+        containerImprovements.removeAllViews();
+        containerDrills.removeAllViews();
+    }
+
+    private void showReportEmpty(String message) {
+        tvReportEmpty.setVisibility(View.VISIBLE);
+        tvReportEmpty.setText(message);
+    }
+
+    private void bindScoreBreakdown(JSONObject scoreBreakdown) {
+        gridScoreBreakdown.removeAllViews();
+        if (scoreBreakdown == null || scoreBreakdown.length() == 0) {
+            return;
+        }
+
+        List<String> preferredOrder = Arrays.asList(
+                "摆动腿速度与幅度",
+                "触球质量",
+                "支撑腿稳定性",
+                "随摆完整度"
         );
+
+        List<MetricItem> orderedItems = new ArrayList<>();
+        for (String key : preferredOrder) {
+            if (scoreBreakdown.has(key)) {
+                orderedItems.add(new MetricItem(key, readInt(scoreBreakdown, key, 0)));
+            }
+        }
+
+        Iterator<String> iterator = scoreBreakdown.keys();
+        while (iterator.hasNext()) {
+            String key = iterator.next();
+            if (containsMetric(orderedItems, key)) {
+                continue;
+            }
+            orderedItems.add(new MetricItem(key, readInt(scoreBreakdown, key, 0)));
+        }
+
+        LayoutInflater inflater = LayoutInflater.from(this);
+        for (MetricItem item : orderedItems) {
+            View card = inflater.inflate(R.layout.item_result_metric, gridScoreBreakdown, false);
+            TextView tvName = card.findViewById(R.id.tv_metric_name);
+            TextView tvScore = card.findViewById(R.id.tv_metric_score);
+
+            tvName.setText(item.name);
+            tvScore.setText(String.valueOf(item.score));
+            card.setBackgroundResource(item.score < 60
+                    ? R.drawable.bg_result_metric_card_warning
+                    : R.drawable.bg_result_metric_card);
+
+            GridLayout.LayoutParams params = new GridLayout.LayoutParams();
+            params.width = 0;
+            params.height = GridLayout.LayoutParams.WRAP_CONTENT;
+            params.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
+            params.setMargins(dp(6), dp(6), dp(6), dp(6));
+            card.setLayoutParams(params);
+            gridScoreBreakdown.addView(card);
+        }
+    }
+
+    private void bindImprovements(JSONArray improvements) {
+        containerImprovements.removeAllViews();
+        if (improvements == null || improvements.length() == 0) {
+            return;
+        }
+
+        LayoutInflater inflater = LayoutInflater.from(this);
+        for (int i = 0; i < improvements.length(); i++) {
+            JSONObject item = improvements.optJSONObject(i);
+            if (item == null) {
+                continue;
+            }
+            View card = inflater.inflate(R.layout.item_result_improvement, containerImprovements, false);
+            TextView tvIssue = card.findViewById(R.id.tv_improvement_issue);
+            TextView tvPriority = card.findViewById(R.id.tv_improvement_priority);
+            TextView tvEvidence = card.findViewById(R.id.tv_improvement_evidence);
+            TextView tvSuggestion = card.findViewById(R.id.tv_improvement_suggestion);
+
+            tvIssue.setText(readText(item, "issue", getString(R.string.result_improvement_default_issue)));
+            String evidence = readText(item, "evidence", "");
+            String suggestion = readText(item, "suggestion", "");
+
+            if (TextUtils.isEmpty(evidence)) {
+                tvEvidence.setVisibility(View.GONE);
+            } else {
+                tvEvidence.setText(getString(R.string.result_bullet_content_format, evidence));
+            }
+
+            if (TextUtils.isEmpty(suggestion)) {
+                tvSuggestion.setVisibility(View.GONE);
+            } else {
+                tvSuggestion.setText(getString(R.string.result_bullet_content_format, suggestion));
+            }
+
+            tvPriority.setVisibility(i == 0 ? View.VISIBLE : View.GONE);
+            containerImprovements.addView(card);
+        }
+    }
+
+    private void bindDrills(JSONArray drills) {
+        containerDrills.removeAllViews();
+        if (drills == null || drills.length() == 0) {
+            return;
+        }
+
+        LayoutInflater inflater = LayoutInflater.from(this);
+        for (int i = 0; i < drills.length(); i++) {
+            String drill = drills.optString(i, "");
+            if (TextUtils.isEmpty(drill)) {
+                continue;
+            }
+            View card = inflater.inflate(R.layout.item_result_drill, containerDrills, false);
+            TextView tvTitle = card.findViewById(R.id.tv_drill_title);
+            TextView tvMeta = card.findViewById(R.id.tv_drill_meta);
+
+            DrillItem drillItem = splitDrillText(drill);
+            tvTitle.setText(drillItem.title);
+            tvMeta.setText(drillItem.meta);
+            containerDrills.addView(card);
+        }
+    }
+
+    private void bindStringList(@NonNull LinearLayout container, JSONArray array, int itemLayoutRes) {
+        container.removeAllViews();
+        if (array == null || array.length() == 0) {
+            return;
+        }
+
+        LayoutInflater inflater = LayoutInflater.from(this);
+        for (int i = 0; i < array.length(); i++) {
+            String content = array.optString(i, "");
+            if (TextUtils.isEmpty(content)) {
+                continue;
+            }
+            View itemView = inflater.inflate(itemLayoutRes, container, false);
+            TextView textView = itemView.findViewById(R.id.tv_content);
+            textView.setText(content);
+            container.addView(itemView);
+        }
+    }
+
+    private DrillItem splitDrillText(String drill) {
+        int index = drill.indexOf("（");
+        if (index > 0 && drill.endsWith("）")) {
+            return new DrillItem(drill.substring(0, index), drill.substring(index + 1, drill.length() - 1));
+        }
+        return new DrillItem(drill, getString(R.string.result_drill_meta_default));
+    }
+
+    private boolean containsMetric(List<MetricItem> items, String key) {
+        for (MetricItem item : items) {
+            if (item.name.equals(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private int readInt(JSONObject jsonObject, String key, int fallback) {
+        if (jsonObject == null || !jsonObject.has(key)) {
+            return fallback;
+        }
+        try {
+            Object value = jsonObject.get(key);
+            if (value instanceof Number) {
+                return clampScore(((Number) value).intValue());
+            }
+            String raw = String.valueOf(value).replaceAll("[^0-9-]", "");
+            if (TextUtils.isEmpty(raw)) {
+                return fallback;
+            }
+            return clampScore(Integer.parseInt(raw));
+        } catch (Exception ignored) {
+            return fallback;
+        }
+    }
+
+    private String readText(JSONObject jsonObject, String key, String fallback) {
+        if (jsonObject == null || !jsonObject.has(key)) {
+            return fallback;
+        }
+        String value = jsonObject.optString(key, "").trim();
+        return value.isEmpty() ? fallback : value;
+    }
+
+    private int clampScore(int value) {
+        return Math.max(0, Math.min(100, value));
     }
 
     private void bindVideo(String videoPath) {
         stopVideo();
         tvVideoCurrent.setText("00:00");
 
-        if (TextUtils.isEmpty(videoPath) || "无".equals(videoPath)) {
+        String resolvedVideoPath = resolveExistingVideoPath(videoPath);
+        if (TextUtils.isEmpty(resolvedVideoPath)) {
             tvVideoTotal.setText("00:00");
             tvVideoToggle.setText(R.string.common_play);
-            Toast.makeText(this, getString(R.string.train_record_no_video), Toast.LENGTH_SHORT).show();
             return;
         }
 
-        File file = new File(videoPath);
-        if (!file.exists()) {
-            tvVideoTotal.setText("00:00");
-            tvVideoToggle.setText(R.string.common_play);
-            Toast.makeText(this, getString(R.string.train_record_video_missing), Toast.LENGTH_SHORT).show();
-            return;
-        }
-
+        File file = new File(resolvedVideoPath);
         vvPreview.setVideoURI(Uri.fromFile(file));
         vvPreview.setOnPreparedListener(mp -> {
             int duration = vvPreview.getDuration();
@@ -330,6 +527,49 @@ public class TrainRecordsActivity extends AppCompatActivity {
             tvVideoToggle.setText(R.string.common_play);
             updateProgressBar(1f);
         });
+    }
+
+    private String resolveExistingVideoPath(String videoPath) {
+        if (TextUtils.isEmpty(videoPath) || "无".equals(videoPath)) {
+            return "";
+        }
+
+        List<String> candidates = new ArrayList<>();
+        candidates.add(videoPath);
+
+        if (videoPath.startsWith("file://")) {
+            try {
+                String fromUri = Uri.parse(videoPath).getPath();
+                if (!TextUtils.isEmpty(fromUri)) {
+                    candidates.add(fromUri);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        File origin = new File(videoPath);
+        String name = origin.getName();
+        File parent = origin.getParentFile();
+        if (parent != null && !TextUtils.isEmpty(name)) {
+            if (name.startsWith("pose_")) {
+                candidates.add(new File(parent, name.substring("pose_".length())).getAbsolutePath());
+            } else {
+                candidates.add(new File(parent, "pose_" + name).getAbsolutePath());
+            }
+        }
+
+        for (String candidate : candidates) {
+            if (TextUtils.isEmpty(candidate)) {
+                continue;
+            }
+            File file = new File(candidate);
+            if (file.exists() && file.isFile()) {
+                return file.getAbsolutePath();
+            }
+        }
+
+        Toast.makeText(this, getString(R.string.train_record_video_missing), Toast.LENGTH_SHORT).show();
+        return "";
     }
 
     private void startProgressUpdates() {
@@ -388,15 +628,9 @@ public class TrainRecordsActivity extends AppCompatActivity {
     }
 
     private void resetPreviewPanel() {
-        tvKneeAngle.setText(R.string.train_records_knee_angle_placeholder);
-        tvHipRotation.setText(R.string.train_records_hip_rotation_placeholder);
-        tvPowerOutput.setText(R.string.train_records_power_output_placeholder);
-        tvImpactForceValue.setText(R.string.train_records_impact_force_placeholder);
-        tvSwingSpeedValue.setText(R.string.train_records_swing_speed_placeholder);
-        tvInsightBody.setText(R.string.train_records_select_hint);
-        tvChainLine1.setText(R.string.train_records_chain_line_1_placeholder);
-        tvChainLine2.setText(R.string.train_records_chain_line_2_placeholder);
-        tvChainLine3.setText(R.string.train_records_chain_line_3_placeholder);
+        clearReportViews();
+        tvReportEmpty.setText(R.string.train_records_select_hint);
+        tvReportEmpty.setVisibility(View.VISIBLE);
         tvVideoCurrent.setText("00:00");
         tvVideoTotal.setText("00:00");
         tvVideoToggle.setText(R.string.common_play);
@@ -437,16 +671,8 @@ public class TrainRecordsActivity extends AppCompatActivity {
     }
 
     private void persistRecords() {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < records.size(); i++) {
-            if (i > 0) {
-                sb.append('\n');
-            }
-            sb.append(resolveRawText(records.get(i)));
-        }
-        repository.saveTrainRecords(currentAccount, sb.toString());
+        repository.replaceTrainRecordList(currentAccount, new ArrayList<>(records));
     }
-
 
     private String formatMs(int ms) {
         int totalSec = Math.max(0, ms / 1000);
@@ -482,5 +708,25 @@ public class TrainRecordsActivity extends AppCompatActivity {
         int count;
         int avgScore;
         String videoPath;
+    }
+
+    private static class MetricItem {
+        final String name;
+        final int score;
+
+        MetricItem(String name, int score) {
+            this.name = name;
+            this.score = score;
+        }
+    }
+
+    private static class DrillItem {
+        final String title;
+        final String meta;
+
+        DrillItem(String title, String meta) {
+            this.title = title;
+            this.meta = meta;
+        }
     }
 }

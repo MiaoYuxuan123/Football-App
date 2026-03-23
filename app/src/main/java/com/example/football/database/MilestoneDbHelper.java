@@ -17,7 +17,7 @@ import java.util.List;
 
 public class MilestoneDbHelper extends SQLiteOpenHelper {
     private static final String DB_NAME = "football_milestone.db";
-    private static final int DB_VERSION = 4;
+    private static final int DB_VERSION = 5;
     private static final String TABLE = "milestone";
     private static final String TABLE_TRAIN_RECORD = "train_record";
     private static volatile MilestoneDbHelper instance;
@@ -80,6 +80,9 @@ public class MilestoneDbHelper extends SQLiteOpenHelper {
         }
         if (oldVersion < 4) {
             createTrainRecordTable(db);
+        }
+        if (oldVersion < 5) {
+            db.execSQL("ALTER TABLE " + TABLE_TRAIN_RECORD + " ADD COLUMN feedback_json TEXT");
         }
     }
 
@@ -299,6 +302,8 @@ public class MilestoneDbHelper extends SQLiteOpenHelper {
                 record.actionCount = getIntOrDefault(c, "action_count");
                 record.avgScore = getIntOrDefault(c, "avg_score");
                 record.videoPath = c.getString(c.getColumnIndexOrThrow("video_path"));
+                int feedbackIdx = c.getColumnIndex("feedback_json");
+                record.feedbackJson = feedbackIdx >= 0 ? c.getString(feedbackIdx) : "";
                 result.add(record);
             }
         }
@@ -395,7 +400,8 @@ public class MilestoneDbHelper extends SQLiteOpenHelper {
                 + "mode TEXT,"
                 + "action_count INTEGER NOT NULL DEFAULT 0,"
                 + "avg_score INTEGER NOT NULL DEFAULT 0,"
-                + "video_path TEXT"
+                + "video_path TEXT,"
+                + "feedback_json TEXT"
                 + ")");
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_train_record_account_order ON "
                 + TABLE_TRAIN_RECORD + "(account, display_order)");
@@ -414,6 +420,7 @@ public class MilestoneDbHelper extends SQLiteOpenHelper {
         cv.put("action_count", Math.max(0, record.actionCount));
         cv.put("avg_score", Math.max(0, record.avgScore));
         cv.put("video_path", record.videoPath);
+        cv.put("feedback_json", record.feedbackJson == null ? "" : record.feedbackJson);
         db.insert(TABLE_TRAIN_RECORD, null, cv);
     }
 }

@@ -36,7 +36,7 @@ public interface AppRepository {
     void prependTrainRecord(String account, String record);
 
     // Unified write for one finished training session.
-    void saveTrainingSession(String account, String mode, int avgScore, int actionCount, String videoPath);
+    void saveTrainingSession(String account, String mode, int avgScore, int actionCount, String videoPath, String feedbackJson);
 
     // Centralized media path allocator for training video output.
     String createTrainingVideoPath();
@@ -56,4 +56,7 @@ public interface AppRepository {
 
     // 获取当前账号的平均分数
     float getAvgScore(String account);
+
+    // Replace full record list while preserving structured fields like video path and feedback JSON.
+    void replaceTrainRecordList(String account, List<TrainRecord> records);
 }

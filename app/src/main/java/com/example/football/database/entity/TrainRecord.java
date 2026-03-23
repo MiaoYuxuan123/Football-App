@@ -9,6 +9,7 @@ public class TrainRecord {
     public int actionCount;
     public int avgScore;
     public String videoPath;
+    public String feedbackJson;
 
     public static TrainRecord fromRawText(String rawText) {
         TrainRecord record = new TrainRecord();
@@ -16,6 +17,7 @@ public class TrainRecord {
         record.createdAt = "";
         record.mode = "";
         record.videoPath = "";
+        record.feedbackJson = "";
         if (record.rawText.isEmpty()) {
             return record;
         }

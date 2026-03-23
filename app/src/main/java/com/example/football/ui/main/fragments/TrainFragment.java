@@ -131,6 +131,8 @@ public class TrainFragment extends Fragment {
     private String pendingPresetMode;
     private int finalizedAvgScore = 0;
     private boolean isUploadingFeedback = false;
+    private String finalizedFeedbackJson = "";
+    private boolean sessionRecordSaved = false;
 
     private final ActivityResultLauncher<String> cameraPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -594,10 +596,22 @@ public class TrainFragment extends Fragment {
         }
     }
 
-    private void saveTrainRecord(int finalAvgScore) {
+    private void saveTrainRecord(int finalAvgScore, @Nullable String feedbackJson) {
+        String defaultVideoPath = (videoFinalizeDone && !lastVideoPath.isEmpty()) ? lastVideoPath : "";
+        saveTrainRecord(finalAvgScore, feedbackJson, defaultVideoPath);
+    }
+
+    private void saveTrainRecord(int finalAvgScore, @Nullable String feedbackJson, @Nullable String videoPathOverride) {
+        if (sessionRecordSaved) {
+            return;
+        }
         String account = repository.getCurrentAccount();
-        String videoPath = (videoFinalizeDone && !lastVideoPath.isEmpty()) ? lastVideoPath : "";
-        repository.saveTrainingSession(account, currentMode, finalAvgScore, actionCount, videoPath);
+        String candidatePath = videoPathOverride == null ? "" : videoPathOverride.trim();
+        String videoPath = candidatePath.isEmpty()
+                ? ((videoFinalizeDone && !lastVideoPath.isEmpty()) ? lastVideoPath : "")
+                : candidatePath;
+        repository.saveTrainingSession(account, currentMode, finalAvgScore, actionCount, videoPath, feedbackJson == null ? "" : feedbackJson);
+        sessionRecordSaved = true;
     }
 
     private void uploadBackendFeedbackAndAnalyze(int sessionId, @NonNull String videoPath) {
@@ -696,6 +710,10 @@ public class TrainFragment extends Fragment {
             }
             isUploadingFeedback = false;
             finalizedAvgScore = score;
+            finalizedFeedbackJson = feedbackPayload;
+
+            // Use callback-captured path to avoid cross-session mutable state interference.
+            saveTrainRecord(finalizedAvgScore, finalizedFeedbackJson, videoPath);
 
             tvAvgScore.setText(getString(R.string.train_avg_score_format, finalizedAvgScore));
             tvSuggestion.setText(suggestion);
@@ -879,6 +897,8 @@ public class TrainFragment extends Fragment {
             videoFinalizeDone = false;
             isUploadingFeedback = false;
             finalizedAvgScore = 0;
+            finalizedFeedbackJson = "";
+            sessionRecordSaved = false;
             actionCount = 0;
             totalScore = 0;
             lastRepTimestampMs = 0L;
@@ -925,7 +945,7 @@ public class TrainFragment extends Fragment {
                 Toast.makeText(requireContext(), getString(R.string.train_toast_wait_video_finalize), Toast.LENGTH_SHORT).show();
                 return;
             }
-            saveTrainRecord(finalizedAvgScore);
+            saveTrainRecord(finalizedAvgScore, finalizedFeedbackJson);
             updateRecordStatus(getString(R.string.train_status_ready), true, getString(R.string.train_save_text_done));
             Toast.makeText(requireContext(), getString(R.string.train_toast_record_saved), Toast.LENGTH_SHORT).show();
         });
@@ -979,6 +999,8 @@ public class TrainFragment extends Fragment {
         actionCount = 0;
         totalScore = 0;
         finalizedAvgScore = 0;
+        finalizedFeedbackJson = "";
+        sessionRecordSaved = false;
         videoFinalizeDone = false;
         pendingVideoPath = "";
         lastVideoPath = "";
@@ -1078,6 +1100,8 @@ public class TrainFragment extends Fragment {
         videoFinalizeDone = false;
         isUploadingFeedback = false;
         finalizedAvgScore = 0;
+        finalizedFeedbackJson = "";
+        sessionRecordSaved = false;
 
         String rawPath = pendingVideoPath;
         String processedPath = lastVideoPath;
@@ -1102,6 +1126,8 @@ public class TrainFragment extends Fragment {
         videoFinalizeDone = false;
         isUploadingFeedback = false;
         finalizedAvgScore = 0;
+        finalizedFeedbackJson = "";
+        sessionRecordSaved = false;
         actionCount = 0;
         totalScore = 0;
         lastRepTimestampMs = 0L;
