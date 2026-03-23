@@ -720,7 +720,8 @@ public class TrainFragment extends Fragment {
             isUploadingFeedback = false;
             tvAvgScore.setText(getString(R.string.train_avg_score_format, finalizedAvgScore));
             updateRecordStatus(getString(R.string.train_status_backend_feedback_failed), true, getString(R.string.train_save_text_default));
-            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.train_status_backend_action_unclear), Toast.LENGTH_SHORT).show();
+            Log.w(TAG, "backend feedback failed detail=" + message);
         });
     }
 

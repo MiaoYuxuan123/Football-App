@@ -84,6 +84,7 @@
     <string name="train_start_text_default">开始识别</string>
     <string name="train_start_text_retry">重新录制</string>
     <string name="train_upload_existing_video">上传已有视频分析</string>
+    <string name="train_exit">退出</string>
 
     <string name="train_status_idle">视频状态：待开始录制</string>
     <string name="train_status_recording">视频状态：录制中</string>
@@ -99,6 +100,7 @@
     <string name="train_status_uploading_feedback">视频状态：正在上传并请求后端分析</string>
     <string name="train_status_backend_feedback_ready">视频状态：分析完成，已展示后端反馈</string>
     <string name="train_status_backend_feedback_failed">视频状态：后端反馈失败，已使用本地评分</string>
+    <string name="train_status_backend_action_unclear">视频中人物动作不够清晰</string>
 
     <string name="train_toast_need_camera_permission">请先允许相机权限</string>
     <string name="train_toast_camera_init_failed">相机初始化失败：%1$s</string>
