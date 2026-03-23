@@ -28,6 +28,7 @@ import com.example.football.database.MilestoneDbHelper;
 import com.example.football.database.entity.MilestoneData;
 import com.example.football.database.entity.TrainRecord;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -117,6 +118,41 @@ public class PlayerGrowthFragment extends Fragment {
         btnCapture.setOnClickListener(v -> Toast.makeText(requireContext(), getString(R.string.pg_capture_hint), Toast.LENGTH_SHORT).show());
     }
 
+    /**
+     * 获取所有训练记录的真实分数（后端反馈）
+     */
+    private float[] getRealTrainScores(String account) {
+        List<com.example.football.database.entity.TrainRecord> records = ((com.example.football.data.AppRepositoryImpl)repository).getTrainRecordList(account);
+        if (records == null || records.isEmpty()) return new float[0];
+        List<Float> scores = new ArrayList<>();
+        for (com.example.football.database.entity.TrainRecord record : records) {
+            int score = 0;
+            if (record != null) {
+                score = Math.max(0, record.avgScore);
+                if (record.feedbackJson != null && !record.feedbackJson.isEmpty()) {
+                    try {
+                        org.json.JSONObject root = new org.json.JSONObject(record.feedbackJson);
+                        org.json.JSONObject feedback = root.optJSONObject("feedback");
+                        org.json.JSONObject source = feedback == null ? root : feedback;
+                        score = source.optInt("overall_score", score);
+                    } catch (Exception ignored) {}
+                }
+            }
+            scores.add((float)score);
+        }
+        float[] arr = new float[scores.size()];
+        for (int i = 0; i < scores.size(); i++) arr[i] = scores.get(i);
+        return arr;
+    }
+
+    private float getRealAvgScore(String account) {
+        float[] arr = getRealTrainScores(account);
+        if (arr.length == 0) return 0f;
+        float sum = 0f;
+        for (float v : arr) sum += v;
+        return sum / arr.length;
+    }
+
     private void bindGrowthData() {
         if (!isAdded()) {
             return;
@@ -126,6 +162,10 @@ public class PlayerGrowthFragment extends Fragment {
         MilestoneDbHelper.TrainingSummary summary = repository.getTrainingSummary(account);
         ParsedTrainingRecord latestRecord = parseLatestRecord(account);
         AttributeSnapshot snapshot = buildSnapshot(summary, latestRecord);
+
+        // 用真实训练记录分数覆盖 summary.avgScore
+        float realAvg = getRealAvgScore(account);
+        summary.avgScore = Math.round(realAvg);
 
         String displayName = TextUtils.isEmpty(account) || "default".equals(account)
                 ? getString(R.string.home_player_default)

@@ -191,9 +191,11 @@ public class MilestoneFragment extends Fragment {
         tvExperience.setText(getString(R.string.milestone_experience_detail_format,
                 data.experience, data.experienceToNext, data.xpPerTraining));
 
-        MilestoneDbHelper.TrainingSummary summary = repository.getTrainingSummary(data.account);
+        // 用真实训练记录分数
+        float avgScore = getRealAvgScore();
+        int totalCount = getRealTrainScores().length;
         tvTrainCount.setText(getString(R.string.milestone_star_compare_subtitle_format,
-                summary.totalCount, summary.avgScore));
+                totalCount, Math.round(avgScore)));
     }
 
     private CharSequence buildStyledPercent(int progress) {
@@ -234,16 +236,15 @@ public class MilestoneFragment extends Fragment {
         String starName = STARS[starIdx][0];
         float[] starScores = parseStarScores(STARS[starIdx][1]);
 
-        float[] myRadar = parseScores(data.radarScoresJson);
-        if (myRadar == null || myRadar.length < 3) {
-            float[] trend = parseScores(data.technicalScoresJson);
-            float base = avg(trend);
-            myRadar = new float[]{base, base - 2f, base + 3f, base, base, base};
+        // 用真实训练记录分数填充雷达图（射门/传球/带球）
+        float[] myRadar = getRealTrainScores();
+        float base = avg(myRadar);
+        if (myRadar.length < 3) {
+            myRadar = new float[]{base, base, base, base, base, base};
         }
-
         int myShoot = clampScore(Math.round(myRadar[0]));
-        int myPass = clampScore(Math.round(myRadar[1]));
-        int myDribble = clampScore(Math.round(myRadar[2]));
+        int myPass = clampScore(Math.round(myRadar.length > 1 ? myRadar[1] : base));
+        int myDribble = clampScore(Math.round(myRadar.length > 2 ? myRadar[2] : base));
 
         int starShoot = clampScore(Math.round(starScores[0]));
         int starPass = clampScore(Math.round(starScores[1]));
@@ -376,6 +377,39 @@ public class MilestoneFragment extends Fragment {
         } catch (Exception ignored) {
             return new ArrayList<>();
         }
+    }
+
+    private float[] getRealTrainScores() {
+        // 获取所有训练记录，提取每条的后端反馈分数
+        List<com.example.football.database.entity.TrainRecord> records = ((com.example.football.data.AppRepositoryImpl)repository).getTrainRecordList(data.account);
+        if (records == null || records.isEmpty()) return new float[0];
+        List<Float> scores = new ArrayList<>();
+        for (com.example.football.database.entity.TrainRecord record : records) {
+            int score = 0;
+            if (record != null) {
+                score = Math.max(0, record.avgScore);
+                if (record.feedbackJson != null && !record.feedbackJson.isEmpty()) {
+                    try {
+                        org.json.JSONObject root = new org.json.JSONObject(record.feedbackJson);
+                        org.json.JSONObject feedback = root.optJSONObject("feedback");
+                        org.json.JSONObject source = feedback == null ? root : feedback;
+                        score = source.optInt("overall_score", score);
+                    } catch (Exception ignored) {}
+                }
+            }
+            scores.add((float)score);
+        }
+        float[] arr = new float[scores.size()];
+        for (int i = 0; i < scores.size(); i++) arr[i] = scores.get(i);
+        return arr;
+    }
+
+    private float getRealAvgScore() {
+        float[] arr = getRealTrainScores();
+        if (arr.length == 0) return 0f;
+        float sum = 0f;
+        for (float v : arr) sum += v;
+        return sum / arr.length;
     }
 
     private static class BadgeItem {
