@@ -121,7 +121,7 @@ public class AppRepositoryImpl implements AppRepository {
     }
 
     @Override
-    public void saveTrainingSession(String account, String mode, int avgScore, int actionCount, String videoPath) {
+    public void saveTrainingSession(String account, String mode, int avgScore, int actionCount, String videoPath, String feedbackJson) {
         String normalized = normalizeAccount(account);
         ensureTrainRecordsMigrated(normalized);
 
@@ -132,6 +132,7 @@ public class AppRepositoryImpl implements AppRepository {
         record.actionCount = Math.max(0, actionCount);
         record.avgScore = Math.max(0, avgScore);
         record.videoPath = videoPath == null ? "" : videoPath.trim();
+        record.feedbackJson = feedbackJson == null ? "" : feedbackJson.trim();
         record.rawText = buildTrainRecordText(record);
 
         MilestoneDbHelper.getInstance(appContext)
@@ -239,6 +240,16 @@ public class AppRepositoryImpl implements AppRepository {
             count++;
         }
         return count == 0 ? 0f : sum / count;
+    }
+
+    @Override
+    public void replaceTrainRecordList(String account, List<TrainRecord> records) {
+        String normalized = normalizeAccount(account);
+        ensureTrainRecordsMigrated(normalized);
+        MilestoneDbHelper.getInstance(appContext).replaceTrainRecords(normalized, records);
+        markTrainRecordsMigrated(normalized);
+        clearLegacyTrainRecordKeys(normalized);
+        TrainingRefreshNotifier.notifyRecordsChanged(normalized);
     }
 
     private String buildTrainRecordsKey(String account) {
