@@ -236,7 +236,21 @@ public class AppRepositoryImpl implements AppRepository {
         float sum = 0f;
         int count = 0;
         for (TrainRecord record : records) {
-            sum += record.avgScore;
+            // Use resolveDisplayScore logic to get the actual score (including backend feedback)
+            int score = 0;
+            if (record != null) {
+                score = Math.max(0, record.avgScore);
+                if (!TextUtils.isEmpty(record.feedbackJson)) {
+                    try {
+                        org.json.JSONObject root = new org.json.JSONObject(record.feedbackJson);
+                        org.json.JSONObject feedback = root.optJSONObject("feedback");
+                        org.json.JSONObject source = feedback == null ? root : feedback;
+                        score = source.optInt("overall_score", score);
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+            sum += score;
             count++;
         }
         return count == 0 ? 0f : sum / count;

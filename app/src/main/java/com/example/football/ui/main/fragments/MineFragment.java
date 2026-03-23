@@ -36,6 +36,11 @@ public class MineFragment extends Fragment {
     private String currentAccount = "default";
     private AppRepository repository;
 
+    private TextView tvAvgScore;
+    private TextView tvLastScore;
+    private TextView tvTrainDays;
+    private TextView tvAnalysisCount;
+
     private final ActivityResultLauncher<String> avatarPickerLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
                 if (uri != null) {
@@ -67,20 +72,11 @@ public class MineFragment extends Fragment {
         ivAvatar.setOnClickListener(v -> avatarPickerLauncher.launch("image/*"));
 
         // 新增：显示平均分数
-        TextView tvAvgScore = view.findViewById(R.id.tv_avg_score);
-        float avgScore = ((AppRepositoryImpl)repository).getAvgScore(currentAccount);
-        if (avgScore <= 0.01f) {
-            tvAvgScore.setText("--");
-        } else {
-            tvAvgScore.setText(String.format(Locale.getDefault(), "%.1f", avgScore));
-        }
-        // 新增：训练记录区块分数显示
-        TextView tvLastScore = view.findViewById(R.id.tv_last_score);
-        if (avgScore <= 0.01f) {
-            tvLastScore.setText("0");
-        } else {
-            tvLastScore.setText(String.format(Locale.getDefault(), "%.1f", avgScore));
-        }
+        tvAvgScore = view.findViewById(R.id.tv_avg_score);
+        tvLastScore = view.findViewById(R.id.tv_last_score);
+        tvTrainDays = view.findViewById(R.id.tv_train_days);
+        tvAnalysisCount = view.findViewById(R.id.tv_analysis_count);
+        updateScoreViews();
 
         view.findViewById(R.id.btn_train_records).setOnClickListener(v -> {
             Intent intent = new Intent(requireContext(), TrainRecordsActivity.class);
@@ -98,6 +94,46 @@ public class MineFragment extends Fragment {
         view.findViewById(R.id.btn_help).setOnClickListener(v -> showHelpDialog());
 
         return view;
+    }
+
+    private void updateScoreViews() {
+        float avgScore = ((AppRepositoryImpl)repository).getAvgScore(currentAccount);
+        if (tvAvgScore != null) {
+            if (avgScore <= 0.01f) {
+                tvAvgScore.setText("--");
+            } else {
+                tvAvgScore.setText(String.format(Locale.getDefault(), "%.1f", avgScore));
+            }
+        }
+        if (tvLastScore != null) {
+            if (avgScore <= 0.01f) {
+                tvLastScore.setText("0");
+            } else {
+                tvLastScore.setText(String.format(Locale.getDefault(), "%.1f", avgScore));
+            }
+        }
+        // 训练天数 = 当前日期 - 2026-03-01
+        if (tvTrainDays != null) {
+            try {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                java.util.Date start = sdf.parse("2026-03-01");
+                java.util.Date now = new java.util.Date();
+                long days = (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+                days = Math.max(days, 1); // 至少为1天
+                tvTrainDays.setText(String.valueOf(days));
+            } catch (Exception e) {
+                tvTrainDays.setText("--");
+            }
+        }
+        // 分析数量 = 训练记录个数
+        if (tvAnalysisCount != null) {
+            int count = 0;
+            try {
+                java.util.List<com.example.football.database.entity.TrainRecord> records = ((AppRepositoryImpl)repository).getTrainRecordList(currentAccount);
+                if (records != null) count = records.size();
+            } catch (Exception ignored) {}
+            tvAnalysisCount.setText(String.valueOf(count));
+        }
     }
 
     @Override
@@ -155,7 +191,8 @@ public class MineFragment extends Fragment {
             if (event == null || repository == null) {
                 return;
             }
-            if (event.matchesAccount(currentAccount) && event.affectsMedia()) {
+            if (event.matchesAccount(currentAccount) && (event.affectsRecords() || event.affectsOverview() || event.affectsMedia() || event.scope.equals("all"))) {
+                updateScoreViews();
                 loadAvatar();
             }
         });
