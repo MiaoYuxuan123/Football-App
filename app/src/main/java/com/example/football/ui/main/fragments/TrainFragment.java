@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -38,14 +39,19 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.football.R;
+import com.example.football.coach.CoachFeedbackManager;
 import com.example.football.data.AppRepository;
 import com.example.football.data.RepositoryProvider;
-import com.example.football.coach.CoachFeedbackManager;
-import com.example.football.ui.train.VideoPlayerActivity;
+import com.example.football.ui.result.ResultDetailActivity;
+import com.example.football.utils.HttpUtil;
 import com.example.football.video.PoseVideoProcessor;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.mediapipe.framework.image.MPImage;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.mediapipe.framework.image.BitmapImageBuilder;
+import com.google.mediapipe.framework.image.MPImage;
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark;
 import com.google.mediapipe.tasks.core.BaseOptions;
 import com.google.mediapipe.tasks.vision.core.ImageProcessingOptions;
@@ -54,12 +60,19 @@ import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker;
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Response;
 
 public class TrainFragment extends Fragment {
 
@@ -71,7 +84,7 @@ public class TrainFragment extends Fragment {
     // 核心控件声明
     private PreviewView previewView;
     private RadioGroup rgMode;
-    private Button btnStartRecognize, btnStopRecognize, btnSaveResult, btnDiscardResult;
+    private Button btnStartRecognize, btnStopRecognize, btnSaveResult, btnAnalyzeResult, btnDiscardResult;
     private LinearLayout llRecognizing, llRecognized;
     private TextView tvCurrentAction, tvConfidence, tvScore, tvTotalCount, tvAvgScore, tvSuggestion;
     private TextView tvRecordingState;
@@ -107,10 +120,13 @@ public class TrainFragment extends Fragment {
 
     private static final String TAG = "TrainFragment";
     private static final long REP_INTERVAL_MS = 900L;
+    private static final String ANALYZE_FAST_ENDPOINT = "http://10.0.2.2:8000/analyze_fast";
 
     private String pendingVideoPath = "";
     private boolean videoFinalizeDone = false;
     private String pendingPresetMode;
+    private int finalizedAvgScore = 0;
+    private boolean isUploadingFeedback = false;
 
     private final ActivityResultLauncher<String> cameraPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -163,6 +179,7 @@ public class TrainFragment extends Fragment {
         btnStartRecognize = view.findViewById(R.id.btn_start_recognize);
         btnStopRecognize = view.findViewById(R.id.btn_stop_recognize);
         btnSaveResult = view.findViewById(R.id.btn_save_result);
+        btnAnalyzeResult = view.findViewById(R.id.btn_analyze_result);
         btnDiscardResult = view.findViewById(R.id.btn_not_save_result);
         llRecognizing = view.findViewById(R.id.ll_recognizing);
         llRecognized = view.findViewById(R.id.ll_recognized);
@@ -223,6 +240,9 @@ public class TrainFragment extends Fragment {
         tvRecordingState.setText(text);
         btnSaveResult.setEnabled(canOperate);
         btnSaveResult.setText(saveButtonText);
+        if (btnAnalyzeResult != null) {
+            btnAnalyzeResult.setEnabled(canOperate);
+        }
         if (btnDiscardResult != null) {
             btnDiscardResult.setEnabled(canOperate);
         }
@@ -504,6 +524,9 @@ public class TrainFragment extends Fragment {
         videoFinalizeDone = false;
         isPostProcessing = false;
         btnSaveResult.setEnabled(false);
+        if (btnAnalyzeResult != null) {
+            btnAnalyzeResult.setEnabled(false);
+        }
         updateRecordStatus(getString(R.string.train_status_recording), false, getString(R.string.train_save_text_wait));
         updateStartButtonStyle(false);
 
@@ -554,14 +577,255 @@ public class TrainFragment extends Fragment {
         }
     }
 
-    private void saveTrainRecord() {
-        int avgScore = actionCount > 0 ? totalScore / actionCount : 0;
+    private void saveTrainRecord(int finalAvgScore) {
         String account = repository.getCurrentAccount();
         String videoPath = (videoFinalizeDone && !lastVideoPath.isEmpty()) ? lastVideoPath : "";
-        repository.saveTrainingSession(account, currentMode, avgScore, actionCount, videoPath);
+        repository.saveTrainingSession(account, currentMode, finalAvgScore, actionCount, videoPath);
     }
 
+    private void uploadBackendFeedbackAndAnalyze(int sessionId, @NonNull String videoPath) {
+        if (!isAdded() || sessionId != currentSessionId) {
+            return;
+        }
+        if (isUploadingFeedback) {
+            Toast.makeText(requireContext(), getString(R.string.train_toast_uploading_feedback), Toast.LENGTH_SHORT).show();
+            return;
+        }
 
+        File uploadFile = new File(videoPath);
+        if (!uploadFile.exists()) {
+            onBackendFeedbackFailed(sessionId, getString(R.string.train_toast_upload_file_missing));
+            return;
+        }
+
+        isUploadingFeedback = true;
+        updateRecordStatus(getString(R.string.train_status_uploading_feedback), false, getString(R.string.train_save_text_uploading));
+
+        Log.d(TAG, "Uploading analyze_fast video, size=" + uploadFile.length()
+                + ", path=" + uploadFile.getAbsolutePath());
+
+        HttpUtil.sendMultipartFileRequest(ANALYZE_FAST_ENDPOINT, "file", uploadFile, "video/mp4", null, null, new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                onBackendFeedbackFailed(sessionId, getString(R.string.train_toast_backend_feedback_failed) + "\n" + e.getMessage());
+                Log.e(TAG, "uploadBackendFeedbackAndAnalyze onFailure", e);
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                String body = response.body() == null ? "" : response.body().string();
+                if (!response.isSuccessful()) {
+                    String backendMessage = buildBackendErrorMessage(response.code(), body);
+                    onBackendFeedbackFailed(sessionId, backendMessage);
+                    Log.e(TAG, "Backend analyze_fast failed, code=" + response.code() + ", body=" + body);
+                    return;
+                }
+
+                int parsedScore = finalizedAvgScore;
+                String parsedSuggestion = buildFallbackSuggestionText();
+                String feedbackPayload = "{}";
+                try {
+                    JsonObject root = JsonParser.parseString(body).getAsJsonObject();
+                    parsedScore = extractBackendScore(root, finalizedAvgScore);
+                    parsedSuggestion = extractBackendSuggestion(root, parsedSuggestion);
+                    feedbackPayload = buildFeedbackPayload(root);
+                } catch (Exception parseError) {
+                    Log.e(TAG, "Failed to parse backend response", parseError);
+                }
+
+                onBackendFeedbackReady(sessionId, videoPath, parsedScore, parsedSuggestion, feedbackPayload);
+            }
+        });
+    }
+
+    private String buildBackendErrorMessage(int code, @NonNull String body) {
+        String detail = "";
+        try {
+            JsonObject root = JsonParser.parseString(body).getAsJsonObject();
+            if (root.has("detail") && !root.get("detail").isJsonNull()) {
+                detail = root.get("detail").getAsString();
+            }
+        } catch (Exception ignored) {
+            detail = "";
+        }
+        if (!TextUtils.isEmpty(detail)) {
+            return "后端分析失败(" + code + ")：" + detail;
+        }
+        return "后端分析失败(" + code + ")";
+    }
+
+    private String resolveAnalyzeModeKey(@NonNull String modeText) {
+        // 已弃用：analyze_fast 当前仅上传 file 字段。
+        return MODE_KEY_SHOOT;
+    }
+
+    private String buildFeedbackPayload(@NonNull JsonObject root) {
+        JsonObject source = root.has("feedback") && root.get("feedback").isJsonObject()
+                ? root.getAsJsonObject("feedback")
+                : root;
+        JsonObject sanitized = source.deepCopy();
+        sanitized.remove("provider_model");
+        sanitized.remove("used_fallback");
+        return sanitized.toString();
+    }
+
+    private void onBackendFeedbackReady(int sessionId, @NonNull String videoPath, int score, @NonNull String suggestion, @NonNull String feedbackPayload) {
+        if (!isAdded()) {
+            return;
+        }
+        requireActivity().runOnUiThread(() -> {
+            if (sessionId != currentSessionId || !isAdded()) {
+                return;
+            }
+            isUploadingFeedback = false;
+            finalizedAvgScore = score;
+
+            tvAvgScore.setText(getString(R.string.train_avg_score_format, finalizedAvgScore));
+            tvSuggestion.setText(suggestion);
+            updateRecordStatus(getString(R.string.train_status_backend_feedback_ready), true, getString(R.string.train_save_text_done));
+            Toast.makeText(requireContext(), getString(R.string.train_toast_backend_feedback_ready), Toast.LENGTH_SHORT).show();
+
+            Intent intent = new Intent(requireContext(), ResultDetailActivity.class);
+            intent.putExtra(ResultDetailActivity.EXTRA_VIDEO_PATH, videoPath);
+            intent.putExtra(ResultDetailActivity.EXTRA_FEEDBACK_JSON, feedbackPayload);
+            startActivity(intent);
+        });
+    }
+
+    private void onBackendFeedbackFailed(int sessionId, @NonNull String message) {
+        if (!isAdded()) {
+            return;
+        }
+        requireActivity().runOnUiThread(() -> {
+            if (sessionId != currentSessionId || !isAdded()) {
+                return;
+            }
+            isUploadingFeedback = false;
+            tvAvgScore.setText(getString(R.string.train_avg_score_format, finalizedAvgScore));
+            updateRecordStatus(getString(R.string.train_status_backend_feedback_failed), true, getString(R.string.train_save_text_default));
+            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private int extractBackendScore(@NonNull JsonObject root, int fallbackScore) {
+        int scoreFromFeedback = readNestedInt(root, "feedback", "overall_score");
+        if (scoreFromFeedback >= 0) {
+            return scoreFromFeedback;
+        }
+        int scoreFromMetrics = readNestedInt(root, "metrics", "overall_score");
+        if (scoreFromMetrics >= 0) {
+            return scoreFromMetrics;
+        }
+        int scoreFromMetricsAlt = readNestedInt(root, "metrics", "score");
+        if (scoreFromMetricsAlt >= 0) {
+            return scoreFromMetricsAlt;
+        }
+        return fallbackScore;
+    }
+
+    private int readNestedInt(@NonNull JsonObject root, @NonNull String objectKey, @NonNull String valueKey) {
+        JsonObject nested = root.has(objectKey) && root.get(objectKey).isJsonObject()
+                ? root.getAsJsonObject(objectKey)
+                : null;
+        if (nested == null || !nested.has(valueKey)) {
+            return -1;
+        }
+        try {
+            JsonElement value = nested.get(valueKey);
+            if (value == null || value.isJsonNull()) {
+                return -1;
+            }
+            if (value.getAsJsonPrimitive().isNumber()) {
+                return Math.max(0, Math.min(100, value.getAsInt()));
+            }
+            String raw = value.getAsString();
+            if (TextUtils.isEmpty(raw)) {
+                return -1;
+            }
+            return Math.max(0, Math.min(100, Integer.parseInt(raw.replaceAll("[^0-9-]", ""))));
+        } catch (Exception ignored) {
+            return -1;
+        }
+    }
+
+    private String extractBackendSuggestion(@NonNull JsonObject root, @NonNull String fallbackSuggestion) {
+        JsonObject feedback = root.has("feedback") && root.get("feedback").isJsonObject()
+                ? root.getAsJsonObject("feedback")
+                : null;
+        if (feedback == null) {
+            return fallbackSuggestion;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        String assessment = readString(feedback, "overall_assessment");
+        String actionSummary = readString(feedback, "action_summary");
+
+        if (!TextUtils.isEmpty(assessment)) {
+            sb.append(assessment.trim());
+        } else if (!TextUtils.isEmpty(actionSummary)) {
+            sb.append(actionSummary.trim());
+        }
+
+        if (feedback.has("improvements") && feedback.get("improvements").isJsonArray()) {
+            JsonArray improvements = feedback.getAsJsonArray("improvements");
+            for (int i = 0; i < improvements.size(); i++) {
+                JsonElement element = improvements.get(i);
+                if (!element.isJsonObject()) {
+                    continue;
+                }
+                JsonObject item = element.getAsJsonObject();
+                String issue = readString(item, "issue");
+                String suggestion = readString(item, "suggestion");
+                if (TextUtils.isEmpty(issue) && TextUtils.isEmpty(suggestion)) {
+                    continue;
+                }
+                if (sb.length() > 0) {
+                    sb.append("\n");
+                }
+                sb.append("- ");
+                if (!TextUtils.isEmpty(issue)) {
+                    sb.append(issue.trim());
+                    if (!TextUtils.isEmpty(suggestion)) {
+                        sb.append("：");
+                    }
+                }
+                if (!TextUtils.isEmpty(suggestion)) {
+                    sb.append(suggestion.trim());
+                }
+            }
+        }
+
+        String result = sb.toString().trim();
+        return result.isEmpty() ? fallbackSuggestion : result;
+    }
+
+    private String readString(@NonNull JsonObject object, @NonNull String key) {
+        if (!object.has(key)) {
+            return "";
+        }
+        try {
+            JsonElement value = object.get(key);
+            if (value == null || value.isJsonNull()) {
+                return "";
+            }
+            return value.getAsString();
+        } catch (Exception ignored) {
+            return "";
+        }
+    }
+
+    private String buildFallbackSuggestionText() {
+        if (currentMode.equals(getString(R.string.train_mode_shoot))) {
+            return getString(R.string.train_suggestion_shoot);
+        }
+        if (currentMode.equals(getString(R.string.train_mode_dribble))) {
+            return getString(R.string.train_suggestion_dribble);
+        }
+        if (currentMode.equals(getString(R.string.train_mode_pass))) {
+            return getString(R.string.train_suggestion_pass);
+        }
+        return getString(R.string.train_suggestion_shoot);
+    }
 
     private void setViewListeners() {
         rgMode.setOnCheckedChangeListener((group, checkedId) -> {
@@ -585,12 +849,18 @@ public class TrainFragment extends Fragment {
                 Toast.makeText(requireContext(), getString(R.string.train_toast_wait_post_process), Toast.LENGTH_SHORT).show();
                 return;
             }
+            if (isUploadingFeedback) {
+                Toast.makeText(requireContext(), getString(R.string.train_toast_uploading_feedback), Toast.LENGTH_SHORT).show();
+                return;
+            }
             currentSessionId++;
             saveRequestedForSession = false;
             isRecognizing = true;
             pendingVideoPath = "";
             lastVideoPath = "";
             videoFinalizeDone = false;
+            isUploadingFeedback = false;
+            finalizedAvgScore = 0;
             actionCount = 0;
             totalScore = 0;
             lastRepTimestampMs = 0L;
@@ -612,8 +882,10 @@ public class TrainFragment extends Fragment {
             llRecognized.setVisibility(View.VISIBLE);
 
             int avgScore = actionCount > 0 ? totalScore / actionCount : 0;
+            finalizedAvgScore = avgScore;
             tvTotalCount.setText(getString(R.string.train_total_count_format, currentMode, actionCount));
             tvAvgScore.setText(getString(R.string.train_avg_score_format, avgScore));
+            tvSuggestion.setText(buildFallbackSuggestionText());
 
             if (currentMode.equals(getString(R.string.train_mode_shoot))) {
                 tvSuggestion.setText(getString(R.string.train_suggestion_shoot));
@@ -631,16 +903,29 @@ public class TrainFragment extends Fragment {
             if (!isAdded()) {
                 return;
             }
-            if (isPostProcessing) {
-                Toast.makeText(requireContext(), getString(R.string.train_toast_wait_post_process), Toast.LENGTH_SHORT).show();
-                return;
-            }
-            saveRequestedForSession = true;
             if (!videoFinalizeDone) {
-                updateRecordStatus(getString(R.string.train_status_saving), false, getString(R.string.train_save_text_wait));
+                Toast.makeText(requireContext(), getString(R.string.train_toast_wait_video_finalize), Toast.LENGTH_SHORT).show();
                 return;
             }
-            startOfflinePosePostProcess(lastVideoPath, currentSessionId);
+            saveTrainRecord(finalizedAvgScore);
+            updateRecordStatus(getString(R.string.train_status_ready), true, getString(R.string.train_save_text_done));
+            Toast.makeText(requireContext(), getString(R.string.train_toast_record_saved), Toast.LENGTH_SHORT).show();
+        });
+
+        btnAnalyzeResult.setOnClickListener(v -> {
+            if (!isAdded()) {
+                return;
+            }
+            if (!videoFinalizeDone) {
+                Toast.makeText(requireContext(), getString(R.string.train_toast_wait_video_finalize), Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (isUploadingFeedback) {
+                Toast.makeText(requireContext(), getString(R.string.train_toast_uploading_feedback), Toast.LENGTH_SHORT).show();
+                return;
+            }
+            String videoForAnalyze = !TextUtils.isEmpty(pendingVideoPath) ? pendingVideoPath : lastVideoPath;
+            uploadBackendFeedbackAndAnalyze(currentSessionId, videoForAnalyze);
         });
 
         btnDiscardResult.setOnClickListener(v -> discardCurrentSession());
@@ -670,19 +955,7 @@ public class TrainFragment extends Fragment {
     }
 
     private void finishSaveFlow() {
-        if (!isAdded()) {
-            return;
-        }
-        saveTrainRecord();
-        Toast.makeText(requireContext(), getString(R.string.train_toast_record_saved), Toast.LENGTH_LONG).show();
-
-        if (!lastVideoPath.isEmpty()) {
-            Intent intent = new Intent(requireContext(), VideoPlayerActivity.class);
-            intent.putExtra(VideoPlayerActivity.EXTRA_VIDEO_PATH, lastVideoPath);
-            startActivity(intent);
-        }
-
-        resetToInitialState();
+        // 保留旧流程入口以避免大改结构，当前改为分析按钮独立触发。
     }
 
     private void discardCurrentSession() {
@@ -691,6 +964,8 @@ public class TrainFragment extends Fragment {
         saveRequestedForSession = false;
         isPostProcessing = false;
         videoFinalizeDone = false;
+        isUploadingFeedback = false;
+        finalizedAvgScore = 0;
 
         String rawPath = pendingVideoPath;
         String processedPath = lastVideoPath;
@@ -713,6 +988,8 @@ public class TrainFragment extends Fragment {
         pendingVideoPath = "";
         lastVideoPath = "";
         videoFinalizeDone = false;
+        isUploadingFeedback = false;
+        finalizedAvgScore = 0;
         actionCount = 0;
         totalScore = 0;
         lastRepTimestampMs = 0L;
