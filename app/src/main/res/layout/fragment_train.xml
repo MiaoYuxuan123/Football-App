@@ -258,7 +258,7 @@
                 android:layout_weight="1"
                 android:layout_marginStart="6dp"
                 android:background="@drawable/bg_train_button_danger"
-                android:text="不保存"
+                android:text="@string/train_exit"
                 android:textColor="#FFFFFF"
                 android:textSize="16sp" />
         </LinearLayout>
