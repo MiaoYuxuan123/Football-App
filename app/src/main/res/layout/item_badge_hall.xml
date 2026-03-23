@@ -12,21 +12,37 @@
         android:orientation="vertical"
         android:padding="12dp">
 
-        <TextView
-            android:id="@+id/tvBadgeMark"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="-"
-            android:textColor="#7D8999"
-            android:textSize="22sp"
-            android:textStyle="bold" />
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp">
+            <ImageView
+                android:id="@+id/ivBadgeIcon"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_vertical|start"
+                android:layout_marginStart="4dp"
+                android:layout_marginTop="2dp"
+                android:src="@drawable/ic_badge_star"
+                android:alpha="0.92" />
+            <TextView
+                android:id="@+id/tvBadgeMark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical|end"
+                android:layout_marginEnd="8dp"
+                android:text="-"
+                android:textColor="#7D8999"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+        </FrameLayout>
 
         <TextView
             android:id="@+id/tvBadgeTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="2dp"
             android:maxLines="1"
+            android:ellipsize="end"
             android:text="Badge Title"
             android:textColor="#FFFFFF"
             android:textSize="15sp"
@@ -36,8 +52,9 @@
             android:id="@+id/tvBadgeSubtitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
+            android:layout_marginTop="2dp"
             android:maxLines="2"
+            android:ellipsize="end"
             android:text="Unlock condition"
             android:textColor="#AAB6C6"
             android:textSize="12sp" />
@@ -46,7 +63,7 @@
             android:id="@+id/tvBadgeStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="6dp"
             android:background="@drawable/bg_badge_status_locked"
             android:paddingStart="8dp"
             android:paddingTop="4dp"
@@ -58,4 +75,3 @@
             android:textStyle="bold" />
     </LinearLayout>
 </FrameLayout>
-

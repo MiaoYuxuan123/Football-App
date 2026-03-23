@@ -64,17 +64,20 @@ public class BadgeHallFragment extends Fragment {
         int avgScore = summary.avgScore == 0 ? 70 : summary.avgScore;
 
         List<BadgeDisplayItem> list = new ArrayList<>();
-        list.add(build("shoot_starter", "初级射手", "单项射门达到 10 次", data.shootCount >= 10 || unlockedFromSaved.contains("初级射手")));
-        list.add(build("streak_3", "连训三天", "累计训练达到 3 次", data.trainCount >= 3 || unlockedFromSaved.contains("连训3天")));
-        list.add(build("shoot_100", "百次射门", "射门累计 100 次", data.shootCount >= 100 || unlockedFromSaved.contains("百次射门")));
-        list.add(build("pass_core", "传球指挥官", "传球累计 50 次", data.passCount >= 50));
-        list.add(build("dribble_core", "运球魔术师", "运球累计 50 次", data.dribbleCount >= 50));
-        list.add(build("train_30", "训练狂热者", "总训练次数达到 30", data.trainCount >= 30));
+        // 更容易获得的成就
+        list.add(build("streak_3", "连训三天", "累计训练达到 3 次", data.trainCount >= 3 || unlockedFromSaved.contains("连训三天")));
+        list.add(build("shoot_5", "新手射手", "射门累计 5 次", data.shootCount >= 5));
+        list.add(build("pass_5", "新手传球", "传球累计 5 次", data.passCount >= 5));
+        list.add(build("dribble_5", "新手运球", "运球累计 5 次", data.dribbleCount >= 5));
+        list.add(build("shoot_10", "初级射手", "单项射门达到 10 次", data.shootCount >= 10 || unlockedFromSaved.contains("初级射手")));
         list.add(build("stable_75", "稳定输出", "平均评分达到 75+", avgScore >= 75));
         list.add(build("elite_85", "A 级精度", "平均评分达到 85+", avgScore >= 85));
         list.add(build("all_round", "全能战士", "三项训练都达到 30 次", data.shootCount >= 30 && data.passCount >= 30 && data.dribbleCount >= 30));
         list.add(build("legend_5", "里程碑征服者", "等级达到 5 级", data.level >= 5));
-
+        list.add(build("shoot_100", "百次射门", "射门累计 100 次", data.shootCount >= 100 || unlockedFromSaved.contains("百次射门")));
+        list.add(build("pass_core", "传球指挥官", "传球累计 50 次", data.passCount >= 50));
+        list.add(build("dribble_core", "运球魔术师", "运球累计 50 次", data.dribbleCount >= 50));
+        list.add(build("train_30", "训练狂热者", "总训练次数达到 30", data.trainCount >= 30));
         adapter.submitList(list);
     }
 
