@@ -123,6 +123,16 @@
     <string name="train_toast_backend_feedback_ready">已收到后端反馈</string>
     <string name="train_toast_backend_feedback_failed">后端反馈失败，已使用本地结果保存</string>
 
+    <!-- Dialog strings for analysis/upload progress -->
+    <string name="train_dialog_analysis_title">分析中</string>
+    <string name="train_dialog_analysis_uploading">正在上传视频并请求分析，请稍候…</string>
+    <string name="train_dialog_analysis_done_title">分析完成</string>
+    <string name="train_dialog_analysis_done_message_format">分析得分：%1$d 分</string>
+    <string name="train_dialog_view_result">查看结果</string>
+    <string name="common_close">关闭</string>
+    <string name="train_dialog_analysis_failed_title">分析失败</string>
+    <string name="train_dialog_analysis_failed_message">分析失败：%1$s</string>
+
     <string name="train_ai_coach_ready">AI虚拟教练：我在，开始后我会实时给你反馈</string>
     <string name="train_ai_coach_session_start">准备开始，请保持节奏与稳定性</string>
     <string name="train_ai_feedback_good_shoot">漂亮！支撑脚很稳！</string>
