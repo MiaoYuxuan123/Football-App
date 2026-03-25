@@ -17,7 +17,9 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 
 public class RegisterActivity extends AppCompatActivity {
-    private static final String POST_URL = "http://10.0.2.2:8088/postuser";
+//    private static final String POST_URL = "http://10.0.2.2:8088/postuser";
+    // 替换成你的真实公网 IP
+    private static final String POST_URL = "http://1.94.62.162:8088/postuser";
     private static final MediaType JSON_MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8");
     // OkHttpClient实例（复用，避免重复创建）
     private final OkHttpClient okHttpClient = new OkHttpClient();

@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">10.0.2.2</domain>
-    </domain-config>
+<domain-config cleartextTrafficPermitted="true">
+    <!-- 这里填你的服务器公网 IP -->
+    <domain includeSubdomains="true">1.94.62.162</domain>
+    <!-- 如果是模拟器连电脑，也可以加上 10.0.2.2 -->
+    <domain includeSubdomains="true">10.0.2.2</domain>
+</domain-config>
 </network-security-config>

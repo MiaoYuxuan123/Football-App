@@ -25,7 +25,9 @@ public class LoginActivity extends AppCompatActivity {
     // 声明控件
     private EditText etAccount;   // 账号输入框
     private EditText etPassword;  // 密码输入框
-    private static final String GET_USER_URL = "http://10.0.2.2:8088/findoneuser";
+//    private static final String GET_USER_URL = "http://10.0.2.2:8088/findoneuser";
+    // 替换成你的真实公网 IP
+    private static final String GET_USER_URL = "http://1.94.62.162:8088/findoneuser";
     private final OkHttpClient okHttpClient = new OkHttpClient();
     private AppRepository repository;
 
