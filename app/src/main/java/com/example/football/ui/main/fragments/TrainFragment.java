@@ -124,7 +124,7 @@ public class TrainFragment extends Fragment {
 
     private static final String TAG = "TrainFragment";
     private static final long REP_INTERVAL_MS = 900L;
-    private static final String ANALYZE_FAST_ENDPOINT = "http://10.0.2.2:8000/analyze_fast";
+    private static final String ANALYZE_FAST_ENDPOINT = " http://115.120.248.168:8000/analyze_fast";
 
     private String pendingVideoPath = "";
     private boolean videoFinalizeDone = false;

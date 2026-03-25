@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-<domain-config cleartextTrafficPermitted="true">
-    <!-- 这里填你的服务器公网 IP -->
-    <domain includeSubdomains="true">1.94.62.162</domain>
-    <!-- 如果是模拟器连电脑，也可以加上 10.0.2.2 -->
-    <domain includeSubdomains="true">10.0.2.2</domain>
-</domain-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- 登录/注册后端 (旧服务器) -->
+        <domain includeSubdomains="true">1.94.62.162</domain>
+        
+        <!-- 功能分析后端 (新服务器) -->
+        <domain includeSubdomains="true">115.120.248.168</domain>
+        
+        <!-- 本地模拟器调试用 (可选，开发时建议保留) -->
+        <domain includeSubdomains="true">10.0.2.2</domain>
+    </domain-config>
 </network-security-config>
