@@ -1,6 +1,11 @@
 package com.example.football.ui.result;
 
 import android.net.Uri;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import com.example.football.utils.VideoUtil;
+import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
+
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -91,10 +96,81 @@ public class ResultDetailActivity extends AppCompatActivity {
         releasePlayer();
         exoPlayer = new ExoPlayer.Builder(this).build();
         playerView.setPlayer(exoPlayer);
+
+        // Adjust PlayerView to center-crop and respect rotation using metadata
+        adjustPlayerViewForMeta(videoFile.getAbsolutePath(), playerView);
+
         exoPlayer.setMediaItem(MediaItem.fromUri(Uri.fromFile(videoFile)));
         exoPlayer.prepare();
         exoPlayer.play();
         sectionVideo.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * Adjust PlayerView size and rotation to center-crop video according to metadata.
+     */
+    private void adjustPlayerViewForMeta(@NonNull String videoPath, @NonNull PlayerView playerView) {
+        VideoUtil.VideoMeta meta = VideoUtil.extractMeta(videoPath);
+        ViewGroup parent = (ViewGroup) playerView.getParent();
+        if (meta == null || meta.width <= 0 || meta.height <= 0 || parent == null) {
+            // fallback: match parent
+            if (parent != null) {
+                ViewGroup.LayoutParams lp = playerView.getLayoutParams();
+                lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                lp.height = ViewGroup.LayoutParams.MATCH_PARENT;
+                playerView.setLayoutParams(lp);
+            }
+            playerView.setRotation(0f);
+            playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
+            return;
+        }
+
+        if (parent.getWidth() == 0 || parent.getHeight() == 0) {
+            parent.post(() -> adjustPlayerViewForMeta(videoPath, playerView));
+            return;
+        }
+
+        int rotation = meta.rotation;
+        boolean rotated = (rotation == 90 || rotation == 270);
+        int naturalW = rotated ? meta.height : meta.width;
+        int naturalH = rotated ? meta.width : meta.height;
+
+        int containerW = parent.getWidth();
+        int containerH = parent.getHeight();
+
+        float scale = Math.max(containerW / (float) naturalW, containerH / (float) naturalH);
+        int targetW = Math.round(naturalW * scale);
+        int targetH = Math.round(naturalH * scale);
+
+        // Apply layout params (FrameLayout preferred)
+        ViewGroup.LayoutParams oldLp = playerView.getLayoutParams();
+        if (oldLp instanceof FrameLayout.LayoutParams) {
+            FrameLayout.LayoutParams flp = (FrameLayout.LayoutParams) oldLp;
+            flp.width = targetW;
+            flp.height = targetH;
+            flp.gravity = android.view.Gravity.CENTER;
+            playerView.setLayoutParams(flp);
+        } else {
+            oldLp.width = targetW;
+            oldLp.height = targetH;
+            playerView.setLayoutParams(oldLp);
+        }
+
+        if (parent instanceof ViewGroup) {
+            ((ViewGroup) parent).setClipChildren(false);
+            ((ViewGroup) parent).setClipToPadding(false);
+        }
+
+        playerView.post(() -> {
+            try {
+                playerView.setPivotX(playerView.getWidth() / 2f);
+                playerView.setPivotY(playerView.getHeight() / 2f);
+                playerView.setRotation(rotation);
+                // center-crop using ZOOM mode
+                playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_ZOOM);
+            } catch (Exception ignored) {
+            }
+        });
     }
 
     private void bindFeedback(String feedbackJson) {

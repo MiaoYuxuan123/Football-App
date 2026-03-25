@@ -1,6 +1,7 @@
 package com.example.football.ui.train;
 
 import android.Manifest;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -67,6 +68,8 @@ public class TrainRecognitionActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // 允许横竖屏自由切换
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR);
         setContentView(R.layout.activity_train_recognition);
 
         repository = RepositoryProvider.get(this);
@@ -116,24 +119,22 @@ public class TrainRecognitionActivity extends AppCompatActivity {
     }
 
     /**
-     * 初始化相机预览（打开后置摄像头）
+     * 初始化相机预览（打开后置摄像头，适配横竖屏）
      */
     private void initCameraPreview() {
         cameraProviderFuture = ProcessCameraProvider.getInstance(this);
-        // 相机初始化回调
         cameraProviderFuture.addListener(() -> {
             try {
                 ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
-                // 配置预览功能
-                Preview preview = new Preview.Builder().build();
+                Preview preview = new Preview.Builder()
+                        // 适配当前屏幕方向
+                        .setTargetRotation(getWindowManager().getDefaultDisplay().getRotation())
+                        .build();
                 preview.setSurfaceProvider(previewView.getSurfaceProvider());
-                // 选择后置摄像头
                 CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
-                // 解绑原有相机，绑定新的预览
                 cameraProvider.unbindAll();
                 cameraProvider.bindToLifecycle(this, cameraSelector, preview);
             } catch (Exception e) {
-                // 相机初始化失败提示
                 Toast.makeText(this, "相机初始化失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         }, ContextCompat.getMainExecutor(this));

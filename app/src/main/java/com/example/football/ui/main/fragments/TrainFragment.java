@@ -1,6 +1,7 @@
 package com.example.football.ui.main.fragments;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -9,7 +10,9 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Log;
+import android.hardware.display.DisplayManager;
 import android.view.LayoutInflater;
+import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -38,6 +41,8 @@ import androidx.camera.video.VideoRecordEvent;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.appcompat.app.AlertDialog;
+import android.widget.ProgressBar;
 
 import com.example.football.R;
 import com.example.football.coach.CoachFeedbackManager;
@@ -66,10 +71,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -100,6 +103,10 @@ public class TrainFragment extends Fragment {
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private VideoCapture<Recorder> videoCapture;
     private ImageAnalysis imageAnalysis;
+    // Display rotation listener to rebind camera use cases on orientation change
+    private DisplayManager displayManager;
+    private DisplayManager.DisplayListener displayListener;
+    private int lastKnownRotation = -1;
     private Recording activeRecording;
     private String lastVideoPath = "";
     private PoseVideoProcessor poseVideoProcessor;
@@ -133,6 +140,8 @@ public class TrainFragment extends Fragment {
     private boolean isUploadingFeedback = false;
     private String finalizedFeedbackJson = "";
     private boolean sessionRecordSaved = false;
+    // UI dialog for analysis/upload progress and result
+    private AlertDialog analysisDialog = null;
 
     private final ActivityResultLauncher<String> cameraPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -286,10 +295,91 @@ public class TrainFragment extends Fragment {
                 }
             }
         }, ContextCompat.getMainExecutor(requireContext()));
+
+        // Register display rotation listener so we can rebind camera use cases when the device orientation changes
+        registerDisplayRotationListener();
+    }
+
+    private void registerDisplayRotationListener() {
+        try {
+            if (displayManager != null || !isAdded()) return;
+            Context ctx = requireContext().getApplicationContext();
+            displayManager = (DisplayManager) ctx.getSystemService(Context.DISPLAY_SERVICE);
+            if (displayManager == null) return;
+            // initialize lastKnownRotation from previewView display if available
+            if (previewView != null && previewView.getDisplay() != null) {
+                lastKnownRotation = previewView.getDisplay().getRotation();
+            } else {
+                lastKnownRotation = Surface.ROTATION_0;
+            }
+
+            displayListener = new DisplayManager.DisplayListener() {
+                @Override
+                public void onDisplayAdded(int displayId) { }
+
+                @Override
+                public void onDisplayRemoved(int displayId) { }
+
+                @Override
+                public void onDisplayChanged(int displayId) {
+                    if (!isAdded() || previewView == null || previewView.getDisplay() == null) return;
+                    int rotation = previewView.getDisplay().getRotation();
+                    if (rotation != lastKnownRotation) {
+                        lastKnownRotation = rotation;
+                        onDisplayRotationChanged(rotation);
+                    }
+                }
+            };
+            displayManager.registerDisplayListener(displayListener, null);
+        } catch (Exception e) {
+            Log.w(TAG, "registerDisplayRotationListener failed", e);
+        }
+    }
+
+    private void unregisterDisplayRotationListener() {
+        try {
+            if (displayManager != null && displayListener != null) {
+                displayManager.unregisterDisplayListener(displayListener);
+            }
+        } catch (Exception ignored) {
+        } finally {
+            displayListener = null;
+            displayManager = null;
+        }
+    }
+
+    private void onDisplayRotationChanged(int rotation) {
+        Log.d(TAG, "onDisplayRotationChanged: " + rotation);
+        try {
+            if (cameraProviderFuture != null && cameraProviderFuture.isDone()) {
+                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
+                if (cameraProvider != null) {
+                    // Rebind use cases so builders pick up the new target rotation
+                    cameraProvider.unbindAll();
+                    bindCameraUseCases(cameraProvider);
+                    Log.d(TAG, "Camera use cases rebound due to display rotation change: " + rotation);
+                    return;
+                }
+            }
+
+            // Fallback: try to set target rotation on individual use cases if available
+            if (videoCapture != null) {
+                try { videoCapture.setTargetRotation(rotation); } catch (Exception ignored) {}
+            }
+            if (imageAnalysis != null) {
+                try { imageAnalysis.setTargetRotation(rotation); } catch (Exception ignored) {}
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to handle display rotation change", e);
+        }
     }
 
     private void bindCameraUseCases(ProcessCameraProvider cameraProvider) {
-        Preview preview = new Preview.Builder().build();
+        // Ensure preview rotation follows current display rotation so preview and recordings align
+        int rotation = previewView.getDisplay() != null ? previewView.getDisplay().getRotation() : getResources().getConfiguration().orientation;
+        Preview preview = new Preview.Builder()
+                .setTargetRotation(rotation)
+                .build();
         preview.setSurfaceProvider(previewView.getSurfaceProvider());
 
         Recorder recorder = new Recorder.Builder()
@@ -298,10 +388,17 @@ public class TrainFragment extends Fragment {
                         FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)))
                 .build();
         videoCapture = VideoCapture.withOutput(recorder);
+        // Ensure the video capture use case uses the current display rotation so recorded file orientation matches preview
+        try {
+            videoCapture.setTargetRotation(rotation);
+        } catch (Exception ignored) {
+        }
 
+        // Make ImageAnalysis use same rotation as preview to avoid timestamp/rotation mismatch
         imageAnalysis = new ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                .setTargetRotation(rotation)
                 .build();
         imageAnalysis.setAnalyzer(cameraExecutor, this::analyzeImageProxy);
 
@@ -565,11 +662,10 @@ public class TrainFragment extends Fragment {
                         if (!finalizeEvent.hasError()) {
                             lastVideoPath = sessionRawPath;
                             videoFinalizeDone = true;
-                            if (saveRequestedForSession) {
-                                startOfflinePosePostProcess(lastVideoPath, sessionId);
-                            } else {
-                                updateRecordStatus(getString(R.string.train_status_wait_decision), true, getString(R.string.train_save_text_default));
-                            }
+                            // 自动在录制完成后上传并分析（不再等待用户点击保存/分析）
+                            updateRecordStatus(getString(R.string.train_status_uploading_feedback), false, getString(R.string.train_save_text_uploading));
+                            uploadBackendFeedbackAndAnalyze(sessionId, sessionRawPath);
+                            // keep UI start button state: allow user to wait for result
                             updateStartButtonStyle(false);
                             Toast.makeText(requireContext(), getString(R.string.train_toast_video_saved), Toast.LENGTH_SHORT).show();
                             Log.d(TAG, "Video saved: " + lastVideoPath + ", size=" + videoFile.length());
@@ -631,15 +727,20 @@ public class TrainFragment extends Fragment {
 
         isUploadingFeedback = true;
         updateRecordStatus(getString(R.string.train_status_uploading_feedback), false, getString(R.string.train_save_text_uploading));
+        // Show a modal progress dialog while uploading+analyzing
+        showAnalysisProgressDialog(getString(R.string.train_dialog_analysis_uploading));
 
         Log.d(TAG, "Uploading analyze_fast video, size=" + uploadFile.length()
                 + ", path=" + uploadFile.getAbsolutePath());
 
-        HttpUtil.sendMultipartFileRequest(ANALYZE_FAST_ENDPOINT, "file", uploadFile, "video/mp4", null, null, new Callback() {
+        String endpoint = ANALYZE_FAST_ENDPOINT == null ? "" : ANALYZE_FAST_ENDPOINT.trim();
+        Log.d(TAG, "Using analyze endpoint: '" + endpoint + "'");
+        HttpUtil.sendMultipartFileRequest(endpoint, "file", uploadFile, "video/mp4", null, null, new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                onBackendFeedbackFailed(sessionId, getString(R.string.train_toast_backend_feedback_failed) + "\n" + e.getMessage());
                 Log.e(TAG, "uploadBackendFeedbackAndAnalyze onFailure", e);
+                // Notify failure on UI thread (onBackendFeedbackFailed will also update UI state)
+                onBackendFeedbackFailed(sessionId, getString(R.string.train_toast_backend_feedback_failed) + "\n" + e.getMessage());
             }
 
             @Override
@@ -666,6 +767,113 @@ public class TrainFragment extends Fragment {
 
                 onBackendFeedbackReady(sessionId, videoPath, parsedScore, parsedSuggestion, feedbackPayload);
             }
+        });
+    }
+
+    private void showAnalysisProgressDialog(String initialMessage) {
+        if (!isAdded()) return;
+        requireActivity().runOnUiThread(() -> {
+            if (analysisDialog != null && analysisDialog.isShowing()) {
+                analysisDialog.setMessage(initialMessage);
+                return;
+            }
+            AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+            builder.setTitle(getString(R.string.train_dialog_analysis_title));
+            builder.setMessage(initialMessage);
+            ProgressBar pb = new ProgressBar(requireContext());
+            builder.setView(pb);
+            builder.setCancelable(false);
+            analysisDialog = builder.create();
+            analysisDialog.show();
+        });
+    }
+
+    private void updateAnalysisDialogMessage(String message) {
+        if (!isAdded()) return;
+        requireActivity().runOnUiThread(() -> {
+            if (analysisDialog != null && analysisDialog.isShowing()) {
+                analysisDialog.setMessage(message);
+            }
+        });
+    }
+
+    private void hideAnalysisProgressDialog() {
+        if (!isAdded()) return;
+        requireActivity().runOnUiThread(() -> {
+            try {
+                if (analysisDialog != null && analysisDialog.isShowing()) {
+                    analysisDialog.dismiss();
+                }
+            } catch (Exception ignored) {
+            }
+            analysisDialog = null;
+        });
+    }
+
+    private void showAnalysisResultDialog(int sessionId, @NonNull String videoPath, @NonNull String feedbackJson, int score, @NonNull String suggestion) {
+        if (!isAdded()) return;
+        requireActivity().runOnUiThread(() -> {
+            hideAnalysisProgressDialog();
+            AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+            builder.setTitle(getString(R.string.train_dialog_analysis_done_title));
+            String msg = getString(R.string.train_dialog_analysis_done_message_format, score) + "\n\n" + (TextUtils.isEmpty(suggestion) ? "" : suggestion);
+            builder.setMessage(msg);
+            builder.setCancelable(true);
+            builder.setPositiveButton(getString(R.string.train_dialog_view_result), (d, which) -> {
+                Intent intent = new Intent(requireContext(), ResultDetailActivity.class);
+                intent.putExtra(ResultDetailActivity.EXTRA_VIDEO_PATH, videoPath);
+                intent.putExtra(ResultDetailActivity.EXTRA_FEEDBACK_JSON, feedbackJson);
+                startActivity(intent);
+            });
+            builder.setNegativeButton(getString(R.string.common_close), (d, which) -> d.dismiss());
+            builder.show();
+        });
+    }
+
+    private void onBackendFeedbackReady(int sessionId, @NonNull String videoPath, int score, @NonNull String suggestion, @NonNull String feedbackPayload) {
+        if (!isAdded()) {
+            return;
+        }
+        requireActivity().runOnUiThread(() -> {
+            if (sessionId != currentSessionId || !isAdded()) {
+                return;
+            }
+            isUploadingFeedback = false;
+            finalizedAvgScore = score;
+            finalizedFeedbackJson = feedbackPayload;
+
+            // Use callback-captured path to avoid cross-session mutable state interference.
+            saveTrainRecord(finalizedAvgScore, finalizedFeedbackJson, videoPath);
+
+            tvAvgScore.setText(getString(R.string.train_avg_score_format, finalizedAvgScore));
+            tvSuggestion.setText(suggestion);
+            updateRecordStatus(getString(R.string.train_status_backend_feedback_ready), true, getString(R.string.train_save_text_done));
+            Toast.makeText(requireContext(), getString(R.string.train_toast_backend_feedback_ready), Toast.LENGTH_SHORT).show();
+            // Show modal result dialog letting user view result or close
+            showAnalysisResultDialog(sessionId, videoPath, feedbackPayload, score, suggestion);
+        });
+    }
+
+    private void onBackendFeedbackFailed(int sessionId, @NonNull String message) {
+        if (!isAdded()) {
+            return;
+        }
+        requireActivity().runOnUiThread(() -> {
+            if (sessionId != currentSessionId || !isAdded()) {
+                return;
+            }
+            isUploadingFeedback = false;
+            tvAvgScore.setText(getString(R.string.train_avg_score_format, finalizedAvgScore));
+            updateRecordStatus(getString(R.string.train_status_backend_feedback_failed), true, getString(R.string.train_save_text_default));
+            // Hide progress dialog if visible and show a failure dialog so user notices
+            hideAnalysisProgressDialog();
+            Toast.makeText(requireContext(), getString(R.string.train_status_backend_action_unclear), Toast.LENGTH_SHORT).show();
+            Log.w(TAG, "backend feedback failed detail=" + message);
+            AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+            builder.setTitle(getString(R.string.train_dialog_analysis_failed_title));
+            builder.setMessage(getString(R.string.train_dialog_analysis_failed_message, message));
+            builder.setPositiveButton(getString(R.string.common_close), (d, w) -> d.dismiss());
+            builder.show();
         });
     }
 
@@ -698,49 +906,6 @@ public class TrainFragment extends Fragment {
         sanitized.remove("provider_model");
         sanitized.remove("used_fallback");
         return sanitized.toString();
-    }
-
-    private void onBackendFeedbackReady(int sessionId, @NonNull String videoPath, int score, @NonNull String suggestion, @NonNull String feedbackPayload) {
-        if (!isAdded()) {
-            return;
-        }
-        requireActivity().runOnUiThread(() -> {
-            if (sessionId != currentSessionId || !isAdded()) {
-                return;
-            }
-            isUploadingFeedback = false;
-            finalizedAvgScore = score;
-            finalizedFeedbackJson = feedbackPayload;
-
-            // Use callback-captured path to avoid cross-session mutable state interference.
-            saveTrainRecord(finalizedAvgScore, finalizedFeedbackJson, videoPath);
-
-            tvAvgScore.setText(getString(R.string.train_avg_score_format, finalizedAvgScore));
-            tvSuggestion.setText(suggestion);
-            updateRecordStatus(getString(R.string.train_status_backend_feedback_ready), true, getString(R.string.train_save_text_done));
-            Toast.makeText(requireContext(), getString(R.string.train_toast_backend_feedback_ready), Toast.LENGTH_SHORT).show();
-
-            Intent intent = new Intent(requireContext(), ResultDetailActivity.class);
-            intent.putExtra(ResultDetailActivity.EXTRA_VIDEO_PATH, videoPath);
-            intent.putExtra(ResultDetailActivity.EXTRA_FEEDBACK_JSON, feedbackPayload);
-            startActivity(intent);
-        });
-    }
-
-    private void onBackendFeedbackFailed(int sessionId, @NonNull String message) {
-        if (!isAdded()) {
-            return;
-        }
-        requireActivity().runOnUiThread(() -> {
-            if (sessionId != currentSessionId || !isAdded()) {
-                return;
-            }
-            isUploadingFeedback = false;
-            tvAvgScore.setText(getString(R.string.train_avg_score_format, finalizedAvgScore));
-            updateRecordStatus(getString(R.string.train_status_backend_feedback_failed), true, getString(R.string.train_save_text_default));
-            Toast.makeText(requireContext(), getString(R.string.train_status_backend_action_unclear), Toast.LENGTH_SHORT).show();
-            Log.w(TAG, "backend feedback failed detail=" + message);
-        });
     }
 
     private int extractBackendScore(@NonNull JsonObject root, int fallbackScore) {
@@ -1163,6 +1328,7 @@ public class TrainFragment extends Fragment {
         super.onDestroy();
         currentSessionId++;
         stopVideoRecording();
+        unregisterDisplayRotationListener();
         if (cameraExecutor != null) {
             cameraExecutor.shutdown();
         }

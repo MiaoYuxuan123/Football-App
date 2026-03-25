@@ -9,6 +9,7 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.GridLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -24,6 +25,7 @@ import com.example.football.data.AppRepository;
 import com.example.football.data.RepositoryProvider;
 import com.example.football.data.TrainingRefreshNotifier;
 import com.example.football.database.entity.TrainRecord;
+import com.example.football.utils.VideoUtil;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -515,6 +517,9 @@ public class TrainRecordsActivity extends AppCompatActivity {
         File file = new File(resolvedVideoPath);
         vvPreview.setVideoURI(Uri.fromFile(file));
         vvPreview.setOnPreparedListener(mp -> {
+            // Adjust VideoView to center-crop and respect rotation using metadata
+            adjustVideoViewForMeta(file.getAbsolutePath(), vvPreview);
+
             int duration = vvPreview.getDuration();
             tvVideoTotal.setText(formatMs(duration));
             tvVideoToggle.setText(R.string.common_pause);
@@ -728,5 +733,83 @@ public class TrainRecordsActivity extends AppCompatActivity {
             this.title = title;
             this.meta = meta;
         }
+    }
+
+    /**
+     * Adjust the VideoView size and rotation to center-crop the video content and avoid clipping/offset.
+     * Uses VideoUtil.extractMeta to get width/height/rotation. If parent is not measured yet, it will retry later.
+     */
+    private void adjustVideoViewForMeta(@NonNull String videoPath, @NonNull VideoView videoView) {
+        VideoUtil.VideoMeta meta = VideoUtil.extractMeta(videoPath);
+        if (meta == null || meta.width <= 0 || meta.height <= 0) {
+            // fallback: make VideoView match parent
+            ViewGroup parent = (ViewGroup) videoView.getParent();
+            if (parent != null) {
+                ViewGroup.LayoutParams lp = videoView.getLayoutParams();
+                lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                lp.height = ViewGroup.LayoutParams.MATCH_PARENT;
+                videoView.setLayoutParams(lp);
+                parent.setClipToPadding(false);
+                parent.setClipChildren(false);
+            }
+            videoView.setRotation(0f);
+            return;
+        }
+
+        View parentView = (View) videoView.getParent();
+        if (parentView == null) {
+            return;
+        }
+
+        // If parent not laid out yet, post and retry
+        if (parentView.getWidth() == 0 || parentView.getHeight() == 0) {
+            parentView.post(() -> adjustVideoViewForMeta(videoPath, videoView));
+            return;
+        }
+
+        int rotation = meta.rotation;
+        boolean rotated = (rotation == 90 || rotation == 270);
+        int naturalW = rotated ? meta.height : meta.width;
+        int naturalH = rotated ? meta.width : meta.height;
+
+        int containerW = parentView.getWidth();
+        int containerH = parentView.getHeight();
+
+        // center-crop: scale so video covers the container
+        float scale = Math.max(containerW / (float) naturalW, containerH / (float) naturalH);
+        int targetW = Math.round(naturalW * scale);
+        int targetH = Math.round(naturalH * scale);
+
+        // Apply layout params centered
+        FrameLayout.LayoutParams flp;
+        ViewGroup.LayoutParams oldLp = videoView.getLayoutParams();
+        if (oldLp instanceof FrameLayout.LayoutParams) {
+            flp = (FrameLayout.LayoutParams) oldLp;
+            flp.width = targetW;
+            flp.height = targetH;
+            flp.gravity = android.view.Gravity.CENTER;
+            videoView.setLayoutParams(flp);
+        } else {
+            ViewGroup.LayoutParams lp = videoView.getLayoutParams();
+            lp.width = targetW;
+            lp.height = targetH;
+            videoView.setLayoutParams(lp);
+        }
+
+        // Ensure parent won't clip the rotated/scaled child
+        if (parentView instanceof ViewGroup) {
+            ((ViewGroup) parentView).setClipToPadding(false);
+            ((ViewGroup) parentView).setClipChildren(false);
+        }
+
+        // Set pivot and rotation after layout pass
+        videoView.post(() -> {
+            try {
+                videoView.setPivotX(videoView.getWidth() / 2f);
+                videoView.setPivotY(videoView.getHeight() / 2f);
+                videoView.setRotation(rotation);
+            } catch (Exception ignored) {
+            }
+        });
     }
 }
