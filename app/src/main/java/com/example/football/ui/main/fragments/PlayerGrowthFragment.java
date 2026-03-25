@@ -58,7 +58,10 @@ public class PlayerGrowthFragment extends Fragment {
     private AppRepository repository;
     private WebViewAssetLoader assetLoader;
 
-    private static final int BASE_ATTR_VALUE = 66;
+    private static final int BASE_POWER_VALUE = 71;
+    private static final int BASE_ACCURACY_VALUE = 63;
+    private static final int BASE_TECHNIQUE_VALUE = 65;
+    private static final int BASE_AGILITY_VALUE = 68;
 
     @Nullable
     @Override
@@ -258,10 +261,10 @@ public class PlayerGrowthFragment extends Fragment {
         List<TrainRecord> records = repository.getTrainRecordList(account);
 
         AttributeSnapshot s = new AttributeSnapshot();
-        s.power = BASE_ATTR_VALUE;
-        s.accuracy = BASE_ATTR_VALUE;
-        s.technique = BASE_ATTR_VALUE;
-        s.agility = BASE_ATTR_VALUE;
+        s.power = BASE_POWER_VALUE;
+        s.accuracy = BASE_ACCURACY_VALUE;
+        s.technique = BASE_TECHNIQUE_VALUE;
+        s.agility = BASE_AGILITY_VALUE;
 
         if (records != null && !records.isEmpty()) {
             for (int i = records.size() - 1; i >= 0; i--) {

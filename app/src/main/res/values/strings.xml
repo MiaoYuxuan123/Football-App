@@ -370,18 +370,18 @@
 
     <string name="home_course_title_1">射门稳定性基础课</string>
     <string name="home_course_desc_1">从助跑到触球的完整分解，重点提升射门动作稳定性。</string>
-    <string name="home_course_site_1">课程网站：FIFA Technical Development</string>
-    <string name="home_course_url_1">https://www.fifa.com/football-development/technical</string>
+    <string name="home_course_site_1">课程网站：哔哩哔哩</string>
+    <string name="home_course_url_1">https://m.bilibili.com/video/BV1RrcuzuED9/</string>
 
     <string name="home_course_title_2">运球节奏与变向训练</string>
     <string name="home_course_desc_2">通过步频控制和重心变化，建立更稳定的运球突破节奏。</string>
-    <string name="home_course_site_2">课程网站：UEFA Technical</string>
-    <string name="home_course_url_2">https://www.uefa.com/insideuefa/football-development/technical/</string>
+    <string name="home_course_site_2">课程网站：哔哩哔哩</string>
+    <string name="home_course_url_2">https://m.bilibili.com/video/BV1KHiMeEE35/</string>
 
     <string name="home_course_title_3">传球视野与决策实战课</string>
     <string name="home_course_desc_3">围绕观察、转移和出球时机，提升传球质量与比赛阅读能力。</string>
-    <string name="home_course_site_3">课程网站：The Coaches Voice</string>
-    <string name="home_course_url_3">https://www.thecoachesvoice.com/</string>
+    <string name="home_course_site_3">课程网站：哔哩哔哩</string>
+    <string name="home_course_url_3">https://m.bilibili.com/video/BV1oi2tBsEww</string>
 
     <string name="home_course_open_failed">未找到可打开链接的应用</string>
 </resources>
