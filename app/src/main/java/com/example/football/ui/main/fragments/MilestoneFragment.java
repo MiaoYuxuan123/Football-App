@@ -186,7 +186,8 @@ public class MilestoneFragment extends Fragment {
         tvProgressPercent.setText(buildStyledPercent(progress));
         tvProgressLabel.setText(getString(R.string.milestone_progress_label));
 
-        int monthHours = Math.max(1, data.trainCount * 2);
+        // 训练时长=训练记录条数*1小时
+        int monthHours = Math.max(1, getRealTrainCount());
         tvTrainingInfo.setText(getString(R.string.milestone_month_hours_format, monthHours));
         tvExperience.setText(getString(R.string.milestone_experience_detail_format,
                 data.experience, data.experienceToNext, data.xpPerTraining));
@@ -410,6 +411,12 @@ public class MilestoneFragment extends Fragment {
         float sum = 0f;
         for (float v : arr) sum += v;
         return sum / arr.length;
+    }
+
+    private int getRealTrainCount() {
+        // 获取所有训练记录条数
+        List<com.example.football.database.entity.TrainRecord> records = ((com.example.football.data.AppRepositoryImpl)repository).getTrainRecordList(data.account);
+        return records == null ? 0 : records.size();
     }
 
     private static class BadgeItem {
