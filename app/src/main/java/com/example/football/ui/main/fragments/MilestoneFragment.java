@@ -72,7 +72,7 @@ public class MilestoneFragment extends Fragment {
 
     // Star data: [shoot, pass, dribble, defend, fitness, awareness]
     private static final String[][] STARS = {
-            {"里奥·梅西", "95,92,95,35,75,94"},
+            {"里奥·梅西", "99,99,99,99,99,99"},
             {"克里斯蒂亚诺", "94,82,88,38,90,88"},
             {"内马尔", "88,85,96,35,78,86"}
     };
@@ -243,7 +243,8 @@ public class MilestoneFragment extends Fragment {
         if (myRadar.length < 3) {
             myRadar = new float[]{base, base, base, base, base, base};
         }
-        int myShoot = clampScore(Math.round(myRadar[0]));
+        float realAvgScore = getRealAvgScore();
+        int myShoot = clampScore(Math.round(realAvgScore));
         int myPass = clampScore(Math.round(myRadar.length > 1 ? myRadar[1] : base));
         int myDribble = clampScore(Math.round(myRadar.length > 2 ? myRadar[2] : base));
 

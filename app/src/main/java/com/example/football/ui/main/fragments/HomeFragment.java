@@ -221,6 +221,8 @@ public class HomeFragment extends Fragment {
         tvHomeGreeting.setText(getString(R.string.home_greeting_format, name));
 
         MilestoneDbHelper.TrainingSummary summary = repository.getTrainingSummary(account);
+        float realAvgScore = repository.getAvgScore(account);
+        summary.avgScore = Math.round(realAvgScore);
 
         tvHomeTotalCount.setText(getString(R.string.home_total_count_format, summary.totalCount));
         tvHomeModeBreakdown.setText(getString(
@@ -230,8 +232,7 @@ public class HomeFragment extends Fragment {
                 summary.passCount));
         tvHomeSuccessRate.setText(getString(
                 R.string.home_success_rate_format,
-                summary.successRate,
-                summary.avgScore,
+                realAvgScore,
                 summary.level));
 
         int remain = summary.totalCount > 0 ? 0 : 1;

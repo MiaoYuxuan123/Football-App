@@ -58,6 +58,8 @@ public class PlayerGrowthFragment extends Fragment {
     private AppRepository repository;
     private WebViewAssetLoader assetLoader;
 
+    private static final int BASE_ATTR_VALUE = 66;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -122,7 +124,7 @@ public class PlayerGrowthFragment extends Fragment {
      * 获取所有训练记录的真实分数（后端反馈）
      */
     private float[] getRealTrainScores(String account) {
-        List<com.example.football.database.entity.TrainRecord> records = ((com.example.football.data.AppRepositoryImpl)repository).getTrainRecordList(account);
+        List<com.example.football.database.entity.TrainRecord> records = repository.getTrainRecordList(account);
         if (records == null || records.isEmpty()) return new float[0];
         List<Float> scores = new ArrayList<>();
         for (com.example.football.database.entity.TrainRecord record : records) {
@@ -160,8 +162,7 @@ public class PlayerGrowthFragment extends Fragment {
         String account = repository.getCurrentAccount();
         MilestoneData milestone = repository.getMilestone(account);
         MilestoneDbHelper.TrainingSummary summary = repository.getTrainingSummary(account);
-        ParsedTrainingRecord latestRecord = parseLatestRecord(account);
-        AttributeSnapshot snapshot = buildSnapshot(summary, latestRecord);
+        AttributeSnapshot snapshot = buildSnapshot(account);
 
         // 用真实训练记录分数覆盖 summary.avgScore
         float realAvg = getRealAvgScore(account);
@@ -253,93 +254,70 @@ public class PlayerGrowthFragment extends Fragment {
         valueText.setText(String.valueOf(value));
     }
 
-
-    private ParsedTrainingRecord parseLatestRecord(@NonNull String account) {
+    private AttributeSnapshot buildSnapshot(@NonNull String account) {
         List<TrainRecord> records = repository.getTrainRecordList(account);
-        if (records == null || records.isEmpty()) {
-            return new ParsedTrainingRecord();
-        }
-
-        TrainRecord latest = records.get(0);
-        ParsedTrainingRecord parsed = new ParsedTrainingRecord();
-        parsed.mode = safeString(latest.mode);
-        parsed.count = latest.actionCount;
-        parsed.avgScore = latest.avgScore;
-
-        if ((parsed.count <= 0 && parsed.avgScore <= 0) || TextUtils.isEmpty(parsed.mode)) {
-            TrainRecord fallback = TrainRecord.fromRawText(latest.rawText);
-            if (parsed.count <= 0) {
-                parsed.count = fallback.actionCount;
-            }
-            if (parsed.avgScore <= 0) {
-                parsed.avgScore = fallback.avgScore;
-            }
-            if (TextUtils.isEmpty(parsed.mode)) {
-                parsed.mode = safeString(fallback.mode);
-            }
-        }
-        parsed.valid = parsed.avgScore > 0 || parsed.count > 0;
-        return parsed;
-    }
-
-    private String safeString(@Nullable String value) {
-        return value == null ? "" : value.trim();
-    }
-
-    private int safeParseInt(@Nullable String value) {
-        if (value == null) {
-            return 0;
-        }
-        try {
-            return Integer.parseInt(value.trim());
-        } catch (Exception ignored) {
-            return 0;
-        }
-    }
-
-    private AttributeSnapshot buildSnapshot(@NonNull MilestoneDbHelper.TrainingSummary summary,
-                                            @NonNull ParsedTrainingRecord latestRecord) {
-        int total = Math.max(1, summary.shootCount + summary.dribbleCount + summary.passCount);
-        int shootRatio = Math.round(summary.shootCount * 100f / total);
-        int passRatio = Math.round(summary.passCount * 100f / total);
-        int dribbleRatio = Math.round(summary.dribbleCount * 100f / total);
 
         AttributeSnapshot s = new AttributeSnapshot();
-        s.jointMobility = clamp(Math.round(42 + dribbleRatio * 0.42f + summary.avgScore * 0.34f), 35, 99);
-        s.sprintAngle = clamp(Math.round(30 + shootRatio * 0.48f + summary.avgScore * 0.30f), 28, 95);
+        s.power = BASE_ATTR_VALUE;
+        s.accuracy = BASE_ATTR_VALUE;
+        s.technique = BASE_ATTR_VALUE;
+        s.agility = BASE_ATTR_VALUE;
 
-        s.power = clamp(Math.round(44 + shootRatio * 0.40f + summary.avgScore * 0.36f), 40, 99);
-        s.accuracy = clamp(Math.round(40 + passRatio * 0.42f + summary.successRate * 0.35f), 38, 99);
-        s.technique = clamp(Math.round(42 + dribbleRatio * 0.43f + summary.avgScore * 0.35f), 40, 99);
-        s.agility = clamp(Math.round(40 + s.jointMobility * 0.34f + s.sprintAngle * 0.32f), 38, 99);
-
-        if (latestRecord.valid) {
-            int baseGain = Math.max(1, latestRecord.avgScore / 28 + latestRecord.count / 12);
-            if (latestRecord.mode.contains(getString(R.string.train_mode_shoot))) {
-                s.gainPower = baseGain + 2;
-                s.gainAccuracy = baseGain;
-                s.gainTechnique = baseGain;
-                s.gainAgility = Math.max(1, baseGain - 1);
-            } else if (latestRecord.mode.contains(getString(R.string.train_mode_dribble))) {
-                s.gainPower = Math.max(1, baseGain - 1);
-                s.gainAccuracy = baseGain;
-                s.gainTechnique = baseGain + 2;
-                s.gainAgility = baseGain + 1;
-            } else {
-                s.gainPower = baseGain;
-                s.gainAccuracy = baseGain + 2;
-                s.gainTechnique = baseGain + 1;
-                s.gainAgility = baseGain;
+        if (records != null && !records.isEmpty()) {
+            for (int i = records.size() - 1; i >= 0; i--) {
+                int[] gain = resolveGainByMode(resolveRecordMode(records.get(i)));
+                s.power = clamp(s.power + gain[0], 40, 99);
+                s.accuracy = clamp(s.accuracy + gain[1], 38, 99);
+                s.technique = clamp(s.technique + gain[2], 40, 99);
+                s.agility = clamp(s.agility + gain[3], 38, 99);
             }
+
+            int[] latestGain = resolveGainByMode(resolveRecordMode(records.get(0)));
+            s.gainPower = latestGain[0];
+            s.gainAccuracy = latestGain[1];
+            s.gainTechnique = latestGain[2];
+            s.gainAgility = latestGain[3];
         }
 
-        s.power = clamp(s.power + s.gainPower, 40, 99);
-        s.accuracy = clamp(s.accuracy + s.gainAccuracy, 38, 99);
-        s.technique = clamp(s.technique + s.gainTechnique, 40, 99);
-        s.agility = clamp(s.agility + s.gainAgility, 38, 99);
+        s.jointMobility = clamp(Math.round((s.technique + s.agility) / 2f), 35, 99);
+        s.sprintAngle = clamp(Math.round(30 + s.agility * 0.6f), 28, 95);
         s.overall = Math.round((s.power + s.accuracy + s.technique + s.agility) / 4f);
-
         return s;
+    }
+
+    private String resolveRecordMode(@Nullable TrainRecord record) {
+        if (record == null) {
+            return "";
+        }
+        String mode = safeString(record.mode);
+        if (!TextUtils.isEmpty(mode)) {
+            return mode;
+        }
+        TrainRecord parsed = TrainRecord.fromRawText(record.rawText);
+        return safeString(parsed.mode);
+    }
+
+    // 每次训练从四项里固定选择两项 +1，保证文案与实际属性一致。
+    private int[] resolveGainByMode(@NonNull String mode) {
+        int[] gain = new int[]{0, 0, 0, 0}; // power, accuracy, technique, agility
+        if (mode.contains(getString(R.string.train_mode_shoot))) {
+            gain[0] = 1;
+            gain[1] = 1;
+            return gain;
+        }
+        if (mode.contains(getString(R.string.train_mode_dribble)) || mode.contains("盘带")) {
+            gain[2] = 1;
+            gain[3] = 1;
+            return gain;
+        }
+        if (mode.contains(getString(R.string.train_mode_pass))) {
+            gain[1] = 1;
+            gain[2] = 1;
+            return gain;
+        }
+        gain[0] = 1;
+        gain[3] = 1;
+        return gain;
     }
 
     private int estimateRank(int overall, int trainCount) {
@@ -358,15 +336,12 @@ public class PlayerGrowthFragment extends Fragment {
         return getString(R.string.pg_role_rookie);
     }
 
-    private int clamp(int value, int min, int max) {
-        return Math.max(min, Math.min(max, value));
+    private String safeString(@Nullable String value) {
+        return value == null ? "" : value.trim();
     }
 
-    private static class ParsedTrainingRecord {
-        String mode = "";
-        int count = 0;
-        int avgScore = 0;
-        boolean valid = false;
+    private int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     private static class AttributeSnapshot {
