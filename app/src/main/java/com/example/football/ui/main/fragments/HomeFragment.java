@@ -1,6 +1,8 @@
 package com.example.football.ui.main.fragments;
 
 import android.annotation.SuppressLint;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -34,7 +36,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -133,18 +134,27 @@ public class HomeFragment extends Fragment {
         View cardRecommend1 = view.findViewById(R.id.card_home_recommend_1);
         View cardRecommend2 = view.findViewById(R.id.card_home_recommend_2);
         View cardRecommend3 = view.findViewById(R.id.card_home_recommend_3);
+        View btnCourseTry1 = view.findViewById(R.id.btn_home_course_try_1);
+        View btnCourseTry2 = view.findViewById(R.id.btn_home_course_try_2);
+        View btnCourseTry3 = view.findViewById(R.id.btn_home_course_try_3);
 
         applyPressFeedback(btnStart);
         applyPressFeedback(cardRecommend1);
         applyPressFeedback(cardRecommend2);
         applyPressFeedback(cardRecommend3);
         applyPressFeedback(btnHomeUploadStarPhotos);
+        applyPressFeedback(btnCourseTry1);
+        applyPressFeedback(btnCourseTry2);
+        applyPressFeedback(btnCourseTry3);
 
         btnStart.setOnClickListener(v -> navigateToTrain(null));
         cardRecommend1.setOnClickListener(v -> navigateToTrain(TrainFragment.MODE_KEY_SHOOT));
         cardRecommend2.setOnClickListener(v -> navigateToTrain(TrainFragment.MODE_KEY_DRIBBLE));
         cardRecommend3.setOnClickListener(v -> navigateToTrain(TrainFragment.MODE_KEY_PASS));
         btnHomeUploadStarPhotos.setOnClickListener(v -> starPhotosPickerLauncher.launch("image/*"));
+        btnCourseTry1.setOnClickListener(v -> openExternalCourse(getString(R.string.home_course_url_1)));
+        btnCourseTry2.setOnClickListener(v -> openExternalCourse(getString(R.string.home_course_url_2)));
+        btnCourseTry3.setOnClickListener(v -> openExternalCourse(getString(R.string.home_course_url_3)));
 
         return view;
     }
@@ -457,6 +467,20 @@ public class HomeFragment extends Fragment {
 
     private void stopStarBannerAutoScroll() {
         autoScrollHandler.removeCallbacks(autoScrollRunnable);
+    }
+
+    private void openExternalCourse(String url) {
+        if (!isAdded() || TextUtils.isEmpty(url)) {
+            return;
+        }
+        Uri uri = Uri.parse(url.trim());
+        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+        intent.addCategory(Intent.CATEGORY_BROWSABLE);
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(requireContext(), getString(R.string.home_course_open_failed), Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void observeTrainingRefresh() {
