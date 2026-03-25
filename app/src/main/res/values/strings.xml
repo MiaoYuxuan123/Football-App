@@ -160,7 +160,7 @@
 
     <string name="home_total_count_format">累计训练：%1$d 次</string>
     <string name="home_mode_breakdown_format">射门 %1$d | 运球 %2$d | 传球 %3$d</string>
-    <string name="home_success_rate_format">成功率：%1$d%%  平均分：%2$d  Lv.%3$d</string>
+    <string name="home_success_rate_format">平均分：%1$.1f  Lv.%2$d</string>
     <string name="home_greeting_format">欢迎回来，%1$s</string>
     <string name="home_recommendation_beginner">先进行 8-12 分钟基础训练，再进入专项动作识别。</string>
     <string name="home_recommendation_normal">建议今天重点强化薄弱动作，先做 2 组基础训练再冲击高分。</string>
@@ -180,7 +180,7 @@
     <string name="home_overview_title">训练概览</string>
     <string name="home_total_count_preview">累计训练：0 次</string>
     <string name="home_mode_breakdown_preview">射门 0 | 运球 0 | 传球 0</string>
-    <string name="home_success_rate_preview">成功率：0%%  平均分：0  Lv.1</string>
+    <string name="home_success_rate_preview">平均分：0.0  Lv.1</string>
     <string name="home_recommend_train_title">推荐训练</string>
     <string name="home_recommend_item_1_preview">基础射门训练 | 12 分钟 | 难度: 低</string>
     <string name="home_recommend_item_1_format">%1$s专项训练 | 12 分钟 | 难度: 中</string>
