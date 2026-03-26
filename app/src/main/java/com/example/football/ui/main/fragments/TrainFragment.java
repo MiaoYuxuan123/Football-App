@@ -114,6 +114,7 @@ public class TrainFragment extends Fragment {
     // 识别状态控制
     private boolean isRecognizing = false;
     private String currentMode = "";
+    private String currentModeKey = MODE_KEY_SHOOT;
     private int actionCount = 0;
     private int totalScore = 0;
     private long lastRepTimestampMs = 0L;
@@ -124,7 +125,10 @@ public class TrainFragment extends Fragment {
 
     private static final String TAG = "TrainFragment";
     private static final long REP_INTERVAL_MS = 900L;
-    private static final String ANALYZE_FAST_ENDPOINT = " http://115.120.248.168:8000/analyze_fast";
+    private static final String ANALYZE_SERVER_BASE = "http://10.0.2.2:8000";
+    private static final String ANALYZE_SHOOT_PATH = "/analyze_fast";
+    private static final String ANALYZE_DRIBBLE_PATH = "/analyze_dribble_fast";
+    private static final String ANALYZE_PASS_PATH = "/analyze_pass_fast";
 
     private String pendingVideoPath = "";
     private boolean videoFinalizeDone = false;
@@ -215,6 +219,7 @@ public class TrainFragment extends Fragment {
         postProcessExecutor = Executors.newSingleThreadExecutor();
         poseVideoProcessor = new PoseVideoProcessor();
         currentMode = getString(R.string.train_mode_shoot);
+        currentModeKey = MODE_KEY_SHOOT;
         tvCurrentAction.setText(getString(R.string.train_current_action_format, currentMode));
 
         coachFeedbackManager = new CoachFeedbackManager(requireContext().getApplicationContext(), feedback -> {
@@ -616,15 +621,18 @@ public class TrainFragment extends Fragment {
 
     private void uploadBackendFeedbackAndAnalyze(int sessionId, @NonNull String videoPath) {
         if (!isAdded() || sessionId != currentSessionId) {
+            Log.w(TAG, "skip upload: fragment/session invalid, sessionId=" + sessionId + ", currentSessionId=" + currentSessionId);
             return;
         }
         if (isUploadingFeedback) {
             Toast.makeText(requireContext(), getString(R.string.train_toast_uploading_feedback), Toast.LENGTH_SHORT).show();
+            Log.w(TAG, "skip upload: request already in progress");
             return;
         }
 
         File uploadFile = new File(videoPath);
         if (!uploadFile.exists()) {
+            Log.e(TAG, "skip upload: file missing, path=" + videoPath);
             onBackendFeedbackFailed(sessionId, getString(R.string.train_toast_upload_file_missing));
             return;
         }
@@ -632,14 +640,18 @@ public class TrainFragment extends Fragment {
         isUploadingFeedback = true;
         updateRecordStatus(getString(R.string.train_status_uploading_feedback), false, getString(R.string.train_save_text_uploading));
 
-        Log.d(TAG, "Uploading analyze_fast video, size=" + uploadFile.length()
+        String modeKey = resolveAnalyzeModeKey();
+        String analyzeEndpoint = resolveAnalyzeEndpointByMode(modeKey);
+        Log.d(TAG, "Uploading analyze video, modeKey=" + modeKey
+                + ", endpoint=" + analyzeEndpoint
+                + ", size=" + uploadFile.length()
                 + ", path=" + uploadFile.getAbsolutePath());
 
-        HttpUtil.sendMultipartFileRequest(ANALYZE_FAST_ENDPOINT, "file", uploadFile, "video/mp4", null, null, new Callback() {
+        HttpUtil.sendMultipartFileRequest(analyzeEndpoint, "file", uploadFile, "video/mp4", null, null, new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 onBackendFeedbackFailed(sessionId, getString(R.string.train_toast_backend_feedback_failed) + "\n" + e.getMessage());
-                Log.e(TAG, "uploadBackendFeedbackAndAnalyze onFailure", e);
+                Log.e(TAG, "uploadBackendFeedbackAndAnalyze onFailure, modeKey=" + modeKey + ", endpoint=" + analyzeEndpoint, e);
             }
 
             @Override
@@ -648,9 +660,10 @@ public class TrainFragment extends Fragment {
                 if (!response.isSuccessful()) {
                     String backendMessage = buildBackendErrorMessage(response.code(), body);
                     onBackendFeedbackFailed(sessionId, backendMessage);
-                    Log.e(TAG, "Backend analyze_fast failed, code=" + response.code() + ", body=" + body);
+                    Log.e(TAG, "Backend analyze failed, modeKey=" + modeKey + ", endpoint=" + analyzeEndpoint + ", code=" + response.code() + ", body=" + body);
                     return;
                 }
+                Log.d(TAG, "Backend analyze success, modeKey=" + modeKey + ", endpoint=" + analyzeEndpoint + ", code=" + response.code());
 
                 int parsedScore = finalizedAvgScore;
                 String parsedSuggestion = buildFallbackSuggestionText();
@@ -685,9 +698,41 @@ public class TrainFragment extends Fragment {
         return "后端分析失败(" + code + ")";
     }
 
-    private String resolveAnalyzeModeKey(@NonNull String modeText) {
-        // 已弃用：analyze_fast 当前仅上传 file 字段。
-        return MODE_KEY_SHOOT;
+    private String resolveAnalyzeModeKey() {
+        if (rgMode != null) {
+            int checkedId = rgMode.getCheckedRadioButtonId();
+            if (checkedId == R.id.rb_dribble) {
+                currentModeKey = MODE_KEY_DRIBBLE;
+            } else if (checkedId == R.id.rb_pass) {
+                currentModeKey = MODE_KEY_PASS;
+            } else if (checkedId == R.id.rb_shoot) {
+                currentModeKey = MODE_KEY_SHOOT;
+            }
+        }
+        return currentModeKey;
+    }
+
+    private String resolveAnalyzeEndpointByMode(@NonNull String modeKey) {
+        String path = ANALYZE_SHOOT_PATH;
+        if (MODE_KEY_DRIBBLE.equals(modeKey)) {
+            path = ANALYZE_DRIBBLE_PATH;
+        } else if (MODE_KEY_PASS.equals(modeKey)) {
+            path = ANALYZE_PASS_PATH;
+        }
+        return ANALYZE_SERVER_BASE + path;
+    }
+
+    private void updateCurrentModeState(int checkedId) {
+        if (checkedId == R.id.rb_dribble) {
+            currentMode = getString(R.string.train_mode_dribble);
+            currentModeKey = MODE_KEY_DRIBBLE;
+        } else if (checkedId == R.id.rb_pass) {
+            currentMode = getString(R.string.train_mode_pass);
+            currentModeKey = MODE_KEY_PASS;
+        } else {
+            currentMode = getString(R.string.train_mode_shoot);
+            currentModeKey = MODE_KEY_SHOOT;
+        }
     }
 
     private String buildFeedbackPayload(@NonNull JsonObject root) {
@@ -712,7 +757,6 @@ public class TrainFragment extends Fragment {
             finalizedAvgScore = score;
             finalizedFeedbackJson = feedbackPayload;
 
-            // Use callback-captured path to avoid cross-session mutable state interference.
             saveTrainRecord(finalizedAvgScore, finalizedFeedbackJson, videoPath);
 
             tvAvgScore.setText(getString(R.string.train_avg_score_format, finalizedAvgScore));
@@ -865,13 +909,8 @@ public class TrainFragment extends Fragment {
 
     private void setViewListeners() {
         rgMode.setOnCheckedChangeListener((group, checkedId) -> {
-            if (checkedId == R.id.rb_shoot) {
-                currentMode = getString(R.string.train_mode_shoot);
-            } else if (checkedId == R.id.rb_dribble) {
-                currentMode = getString(R.string.train_mode_dribble);
-            } else if (checkedId == R.id.rb_pass) {
-                currentMode = getString(R.string.train_mode_pass);
-            }
+            updateCurrentModeState(checkedId);
+            Log.d(TAG, "mode changed: checkedId=" + checkedId + ", modeKey=" + currentModeKey + ", modeText=" + currentMode);
             if (isRecognizing) {
                 tvCurrentAction.setText(getString(R.string.train_current_action_format, currentMode));
             }
@@ -956,13 +995,17 @@ public class TrainFragment extends Fragment {
             }
             if (!videoFinalizeDone) {
                 Toast.makeText(requireContext(), getString(R.string.train_toast_wait_video_finalize), Toast.LENGTH_SHORT).show();
+                Log.w(TAG, "skip analyze click: video not finalized");
                 return;
             }
             if (isUploadingFeedback) {
                 Toast.makeText(requireContext(), getString(R.string.train_toast_uploading_feedback), Toast.LENGTH_SHORT).show();
+                Log.w(TAG, "skip analyze click: upload in progress");
                 return;
             }
+            String modeKey = resolveAnalyzeModeKey();
             String videoForAnalyze = !TextUtils.isEmpty(pendingVideoPath) ? pendingVideoPath : lastVideoPath;
+            Log.d(TAG, "analyze clicked: modeKey=" + modeKey + ", endpoint=" + resolveAnalyzeEndpointByMode(modeKey) + ", videoPath=" + videoForAnalyze);
             uploadBackendFeedbackAndAnalyze(currentSessionId, videoForAnalyze);
         });
 
@@ -1084,6 +1127,8 @@ public class TrainFragment extends Fragment {
         }
         if (checkedId != View.NO_ID) {
             rgMode.check(checkedId);
+            updateCurrentModeState(checkedId);
+            Log.d(TAG, "apply preset mode: modeKey=" + currentModeKey + ", modeText=" + currentMode);
         }
         pendingPresetMode = null;
     }
@@ -1155,9 +1200,6 @@ public class TrainFragment extends Fragment {
         }
     }
 
-    /**
-     * Fragment销毁时释放资源（防止内存泄漏）
-     */
     @Override
     public void onDestroy() {
         super.onDestroy();
