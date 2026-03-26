@@ -189,7 +189,7 @@ public class TrainRecordsActivity extends AppCompatActivity {
         TextView btnDelete = row.findViewById(R.id.tv_record_delete);
         TextView tvScore = row.findViewById(R.id.tv_record_score);
 
-        tv.setText(resolveRawText(record));
+        tv.setText(buildRecordDisplayText(record));
         tvScore.setText(String.valueOf(resolveDisplayScore(record)));
         row.setAlpha(selected ? 1f : 0.92f);
 
@@ -204,6 +204,29 @@ public class TrainRecordsActivity extends AppCompatActivity {
         btnShare.setOnClickListener(v -> shareRecord(record));
         btnDelete.setOnClickListener(v -> deleteRecordAt(index));
         return row;
+    }
+
+    private String buildRecordDisplayText(TrainRecord record) {
+        ParsedRecord parsed = toParsedRecord(record);
+        TrainRecord fallback = TrainRecord.fromRawText(resolveRawText(record));
+
+        String time = firstNonEmpty(parsed.time, "--");
+        String mode = firstNonEmpty(parsed.mode, "训练");
+        String video = firstNonEmpty(parsed.videoPath, fallback.videoPath, "无");
+
+        int count = Math.max(0, record == null ? fallback.actionCount : record.actionCount);
+        if (count == 0) {
+            count = Math.max(0, fallback.actionCount);
+        }
+        int avgScore = Math.max(0, record == null ? fallback.avgScore : record.avgScore);
+        if (avgScore == 0) {
+            avgScore = Math.max(0, fallback.avgScore);
+        }
+
+        if (count == 0 && avgScore == 0) {
+            return time + " | " + mode + " | 视频:" + video;
+        }
+        return time + " | " + mode + " | 次数:" + count + " | 均分:" + avgScore + " | 视频:" + video;
     }
 
     private void renderRecordSelection() {

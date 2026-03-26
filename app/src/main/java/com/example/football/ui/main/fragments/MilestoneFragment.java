@@ -21,6 +21,7 @@ import com.example.football.data.RepositoryProvider;
 import com.example.football.data.TrainingRefreshNotifier;
 import com.example.football.database.MilestoneDbHelper;
 import com.example.football.database.entity.MilestoneData;
+import com.example.football.database.entity.TrainRecord;
 import com.example.football.ui.main.MainActivity;
 import com.example.football.ui.main.views.DonutProgressView;
 import com.google.gson.Gson;
@@ -76,6 +77,7 @@ public class MilestoneFragment extends Fragment {
             {"克里斯蒂亚诺", "94,82,88,38,90,88"},
             {"内马尔", "88,85,96,35,78,86"}
     };
+    private static final int DEFAULT_MODE_SCORE = 60;
 
     @Nullable
     @Override
@@ -237,16 +239,10 @@ public class MilestoneFragment extends Fragment {
         String starName = STARS[starIdx][0];
         float[] starScores = parseStarScores(STARS[starIdx][1]);
 
-        // 用真实训练记录分数填充雷达图（射门/传球/带球）
-        float[] myRadar = getRealTrainScores();
-        float base = avg(myRadar);
-        if (myRadar.length < 3) {
-            myRadar = new float[]{base, base, base, base, base, base};
-        }
-        float realAvgScore = getRealAvgScore();
-        int myShoot = clampScore(Math.round(realAvgScore));
-        int myPass = clampScore(Math.round(myRadar.length > 1 ? myRadar[1] : base));
-        int myDribble = clampScore(Math.round(myRadar.length > 2 ? myRadar[2] : base));
+        ModeAverages modeAverages = getModeAverages();
+        int myShoot = modeAverages.shootAvg;
+        int myPass = modeAverages.passAvg;
+        int myDribble = modeAverages.dribbleAvg;
 
         int starShoot = clampScore(Math.round(starScores[0]));
         int starPass = clampScore(Math.round(starScores[1]));
@@ -382,42 +378,117 @@ public class MilestoneFragment extends Fragment {
     }
 
     private float[] getRealTrainScores() {
-        // 获取所有训练记录，提取每条的后端反馈分数
-        List<com.example.football.database.entity.TrainRecord> records = ((com.example.football.data.AppRepositoryImpl)repository).getTrainRecordList(data.account);
+        List<TrainRecord> records = ((com.example.football.data.AppRepositoryImpl) repository).getTrainRecordList(data.account);
         if (records == null || records.isEmpty()) return new float[0];
         List<Float> scores = new ArrayList<>();
-        for (com.example.football.database.entity.TrainRecord record : records) {
-            int score = 0;
-            if (record != null) {
-                score = Math.max(0, record.avgScore);
-                if (record.feedbackJson != null && !record.feedbackJson.isEmpty()) {
-                    try {
-                        org.json.JSONObject root = new org.json.JSONObject(record.feedbackJson);
-                        org.json.JSONObject feedback = root.optJSONObject("feedback");
-                        org.json.JSONObject source = feedback == null ? root : feedback;
-                        score = source.optInt("overall_score", score);
-                    } catch (Exception ignored) {}
-                }
-            }
-            scores.add((float)score);
+        for (TrainRecord record : records) {
+            scores.add((float) extractRecordScore(record));
         }
         float[] arr = new float[scores.size()];
         for (int i = 0; i < scores.size(); i++) arr[i] = scores.get(i);
         return arr;
     }
 
+    private ModeAverages getModeAverages() {
+        List<TrainRecord> records = ((com.example.football.data.AppRepositoryImpl) repository).getTrainRecordList(data.account);
+        if (records == null || records.isEmpty()) {
+            return new ModeAverages(DEFAULT_MODE_SCORE, DEFAULT_MODE_SCORE, DEFAULT_MODE_SCORE);
+        }
+
+        int shootSum = 0;
+        int passSum = 0;
+        int dribbleSum = 0;
+        int shootCount = 0;
+        int passCount = 0;
+        int dribbleCount = 0;
+
+        for (TrainRecord record : records) {
+            String modeKey = resolveRecordModeKey(record == null ? "" : record.mode);
+            int score = extractRecordScore(record);
+            if (TrainFragment.MODE_KEY_SHOOT.equals(modeKey)) {
+                shootSum += score;
+                shootCount++;
+            } else if (TrainFragment.MODE_KEY_PASS.equals(modeKey)) {
+                passSum += score;
+                passCount++;
+            } else if (TrainFragment.MODE_KEY_DRIBBLE.equals(modeKey)) {
+                dribbleSum += score;
+                dribbleCount++;
+            }
+        }
+
+        return new ModeAverages(
+                averageOrZero(shootSum, shootCount),
+                averageOrZero(passSum, passCount),
+                averageOrZero(dribbleSum, dribbleCount)
+        );
+    }
+
+    private int averageOrZero(int sum, int count) {
+        if (count <= 0) {
+            return DEFAULT_MODE_SCORE;
+        }
+        return clampScore(Math.round(sum / (float) count));
+    }
+
     private float getRealAvgScore() {
         float[] arr = getRealTrainScores();
-        if (arr.length == 0) return 0f;
+        if (arr.length == 0) {
+            return 0f;
+        }
         float sum = 0f;
-        for (float v : arr) sum += v;
+        for (float v : arr) {
+            sum += v;
+        }
         return sum / arr.length;
     }
 
+    private String resolveRecordModeKey(String rawMode) {
+        String mode = rawMode == null ? "" : rawMode.trim().toLowerCase();
+        if (mode.contains("pass") || mode.contains("传球")) {
+            return TrainFragment.MODE_KEY_PASS;
+        }
+        if (mode.contains("dribble") || mode.contains("盘带") || mode.contains("运球")) {
+            return TrainFragment.MODE_KEY_DRIBBLE;
+        }
+        if (mode.contains("shoot") || mode.contains("射门")) {
+            return TrainFragment.MODE_KEY_SHOOT;
+        }
+        return "";
+    }
+
+    private int extractRecordScore(TrainRecord record) {
+        int score = 0;
+        if (record != null) {
+            score = Math.max(0, record.avgScore);
+            if (record.feedbackJson != null && !record.feedbackJson.isEmpty()) {
+                try {
+                    org.json.JSONObject root = new org.json.JSONObject(record.feedbackJson);
+                    org.json.JSONObject feedback = root.optJSONObject("feedback");
+                    org.json.JSONObject source = feedback == null ? root : feedback;
+                    score = source.optInt("overall_score", score);
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return clampScore(score);
+    }
+
     private int getRealTrainCount() {
-        // 获取所有训练记录条数
-        List<com.example.football.database.entity.TrainRecord> records = ((com.example.football.data.AppRepositoryImpl)repository).getTrainRecordList(data.account);
+        List<TrainRecord> records = ((com.example.football.data.AppRepositoryImpl) repository).getTrainRecordList(data.account);
         return records == null ? 0 : records.size();
+    }
+
+    private static class ModeAverages {
+        final int shootAvg;
+        final int passAvg;
+        final int dribbleAvg;
+
+        ModeAverages(int shootAvg, int passAvg, int dribbleAvg) {
+            this.shootAvg = shootAvg;
+            this.passAvg = passAvg;
+            this.dribbleAvg = dribbleAvg;
+        }
     }
 
     private static class BadgeItem {
