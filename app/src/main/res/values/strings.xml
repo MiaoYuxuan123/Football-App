@@ -371,17 +371,24 @@
     <string name="home_course_title_1">射门稳定性基础课</string>
     <string name="home_course_desc_1">从助跑到触球的完整分解，重点提升射门动作稳定性。</string>
     <string name="home_course_site_1">课程网站：哔哩哔哩</string>
-    <string name="home_course_url_1">https://m.bilibili.com/video/BV1RrcuzuED9/</string>
+    <string name="home_course_url_1">https://www.bilibili.com/video/BV1dccRzPEjR/?vd_source=3a265f4a3d4f9449e7e636371b36c270</string>
 
     <string name="home_course_title_2">运球节奏与变向训练</string>
     <string name="home_course_desc_2">通过步频控制和重心变化，建立更稳定的运球突破节奏。</string>
     <string name="home_course_site_2">课程网站：哔哩哔哩</string>
-    <string name="home_course_url_2">https://m.bilibili.com/video/BV1KHiMeEE35/</string>
+    <string name="home_course_site_sohu">课程网站：搜狐</string>
+    <string name="home_course_url_2">https://www.bilibili.com/video/BV1nhwBzYE92/</string>
+    <string name="home_course_url_dribble_extra_1">https://m.sohu.com/a/884920613_122006510/?vd_source=3a265f4a3d4f9449e7e636371b36c270</string>
+    <string name="home_course_url_dribble_extra_2">https://www.bilibili.com/video/BV1tf4y1V7rR/?spm_id_from=333.337.search-card.all.click&amp;vd_source=3a265f4a3d4f9449e7e636371b36c270</string>
+    <string name="home_course_url_dribble_extra_3">https://www.bilibili.com/video/BV1XA4y1X7wN/?spm_id_from=333.337.search-card.all.click&amp;vd_source=3a265f4a3d4f9449e7e636371b36c270</string>
 
     <string name="home_course_title_3">传球视野与决策实战课</string>
     <string name="home_course_desc_3">围绕观察、转移和出球时机，提升传球质量与比赛阅读能力。</string>
-    <string name="home_course_site_3">课程网站：哔哩哔哩</string>
-    <string name="home_course_url_3">https://m.bilibili.com/video/BV1oi2tBsEww</string>
+    <string name="home_course_site_3">课程网站：今日头条</string>
+    <string name="home_course_url_3">https://www.toutiao.com/article/7580536102197543475/?&amp;source=m_redirect</string>
+    <string name="home_course_url_pass_extra_1">https://www.bilibili.com/video/BV1a94y1h7HH/?spm_id_from=333.337.search-card.all.click&amp;vd_source=3a265f4a3d4f9449e7e636371b36c270?vd_source=3a265f4a3d4f9449e7e636371b36c270</string>
+    <string name="home_course_url_pass_extra_2">https://www.bilibili.com/video/BV1Ni4y1E7DQ/?spm_id_from=333.337.search-card.all.click&amp;vd_</string>
+    <string name="home_course_url_pass_extra_3">https://www.bilibili.com/video/BV1Aq4y157E6/?spm_id_from=333.337.search-card.all.click</string>
 
     <string name="home_course_open_failed">未找到可打开链接的应用</string>
 </resources>
