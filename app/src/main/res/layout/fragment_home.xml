@@ -546,6 +546,7 @@
                     android:textSize="13sp" />
 
                 <TextView
+                    android:id="@+id/tv_home_course_site_1"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
@@ -605,6 +606,7 @@
                     android:textSize="13sp" />
 
                 <TextView
+                    android:id="@+id/tv_home_course_site_2"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"

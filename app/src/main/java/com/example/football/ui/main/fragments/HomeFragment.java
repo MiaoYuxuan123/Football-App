@@ -38,11 +38,22 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 
 public class HomeFragment extends Fragment {
 
     private static final long STAR_BANNER_AUTO_SCROLL_DELAY_MS = 3200L;
     private static final String STAR_PHOTO_ASSET_DIR = "star_photos";
+
+    private static final class HomeCourseLink {
+        final int siteResId;
+        final int urlResId;
+
+        HomeCourseLink(int siteResId, int urlResId) {
+            this.siteResId = siteResId;
+            this.urlResId = urlResId;
+        }
+    }
 
     private TextView tvHomeGreeting;
     private TextView tvHomeTodayStatus;
@@ -59,6 +70,8 @@ public class HomeFragment extends Fragment {
     private TextView tvHomeRecommendMeta1;
     private TextView tvHomeRecommendMeta2;
     private TextView tvHomeRecommendMeta3;
+    private TextView tvHomeCourseSite1;
+    private TextView tvHomeCourseSite2;
     private ProgressBar pbHomeShoot;
     private ProgressBar pbHomeDribble;
     private ProgressBar pbHomePass;
@@ -67,6 +80,27 @@ public class HomeFragment extends Fragment {
     private View btnHomeUploadStarPhotos;
     private HomeStarBannerAdapter homeStarBannerAdapter;
     private AppRepository repository;
+    private final Random random = new Random();
+    private final List<HomeCourseLink> shootCourseLinks = Arrays.asList(
+            new HomeCourseLink(R.string.home_course_site_1, R.string.home_course_url_1),
+            new HomeCourseLink(R.string.home_course_site_2, R.string.home_course_url_2),
+            new HomeCourseLink(R.string.home_course_site_3, R.string.home_course_url_3)
+    );
+    private final List<HomeCourseLink> dribbleCourseLinks = Arrays.asList(
+            new HomeCourseLink(R.string.home_course_site_2, R.string.home_course_url_2),
+            new HomeCourseLink(R.string.home_course_site_sohu, R.string.home_course_url_dribble_extra_1),
+            new HomeCourseLink(R.string.home_course_site_2, R.string.home_course_url_dribble_extra_2),
+            new HomeCourseLink(R.string.home_course_site_2, R.string.home_course_url_dribble_extra_3)
+    );
+    private final List<Integer> passCourseUrlResIds = Arrays.asList(
+            R.string.home_course_url_3,
+            R.string.home_course_url_pass_extra_1,
+            R.string.home_course_url_pass_extra_2,
+            R.string.home_course_url_pass_extra_3
+    );
+    private HomeCourseLink selectedShootCourse;
+    private HomeCourseLink selectedDribbleCourse;
+    private Integer selectedPassCourseUrlResId;
 
     private final Handler autoScrollHandler = new Handler(Looper.getMainLooper());
     private final Runnable autoScrollRunnable = () -> {
@@ -119,6 +153,8 @@ public class HomeFragment extends Fragment {
         tvHomeRecommendMeta1 = view.findViewById(R.id.tv_home_recommend_meta_1);
         tvHomeRecommendMeta2 = view.findViewById(R.id.tv_home_recommend_meta_2);
         tvHomeRecommendMeta3 = view.findViewById(R.id.tv_home_recommend_meta_3);
+        tvHomeCourseSite1 = view.findViewById(R.id.tv_home_course_site_1);
+        tvHomeCourseSite2 = view.findViewById(R.id.tv_home_course_site_2);
         pbHomeShoot = view.findViewById(R.id.pb_home_shoot);
         pbHomeDribble = view.findViewById(R.id.pb_home_dribble);
         pbHomePass = view.findViewById(R.id.pb_home_pass);
@@ -152,9 +188,13 @@ public class HomeFragment extends Fragment {
         cardRecommend2.setOnClickListener(v -> navigateToTrain(TrainFragment.MODE_KEY_DRIBBLE));
         cardRecommend3.setOnClickListener(v -> navigateToTrain(TrainFragment.MODE_KEY_PASS));
         btnHomeUploadStarPhotos.setOnClickListener(v -> starPhotosPickerLauncher.launch("image/*"));
-        btnCourseTry1.setOnClickListener(v -> openExternalCourse(getString(R.string.home_course_url_1)));
-        btnCourseTry2.setOnClickListener(v -> openExternalCourse(getString(R.string.home_course_url_2)));
-        btnCourseTry3.setOnClickListener(v -> openExternalCourse(getString(R.string.home_course_url_3)));
+        btnCourseTry1.setOnClickListener(v -> openExternalCourse(resolveSelectedShootCourseUrl()));
+        btnCourseTry2.setOnClickListener(v -> openExternalCourse(resolveSelectedDribbleCourseUrl()));
+        btnCourseTry3.setOnClickListener(v -> openExternalCourse(resolveSelectedPassCourseUrl()));
+
+        bindRandomShootCourse();
+        bindRandomDribbleCourse();
+        bindRandomPassCourse();
 
         return view;
     }
@@ -190,6 +230,9 @@ public class HomeFragment extends Fragment {
         super.onResume();
         bindHomeSummary();
         setupStarBanner();
+        bindRandomShootCourse();
+        bindRandomDribbleCourse();
+        bindRandomPassCourse();
     }
 
     @Override
@@ -468,6 +511,72 @@ public class HomeFragment extends Fragment {
 
     private void stopStarBannerAutoScroll() {
         autoScrollHandler.removeCallbacks(autoScrollRunnable);
+    }
+
+    private void bindRandomShootCourse() {
+        if (!isAdded() || shootCourseLinks.isEmpty()) {
+            return;
+        }
+        selectedShootCourse = shootCourseLinks.get(random.nextInt(shootCourseLinks.size()));
+        if (tvHomeCourseSite1 != null) {
+            tvHomeCourseSite1.setText(getString(selectedShootCourse.siteResId));
+        }
+    }
+
+    private String resolveSelectedShootCourseUrl() {
+        if (!isAdded()) {
+            return null;
+        }
+        if (selectedShootCourse == null) {
+            bindRandomShootCourse();
+        }
+        if (selectedShootCourse == null) {
+            return getString(R.string.home_course_url_1);
+        }
+        return getString(selectedShootCourse.urlResId);
+    }
+
+    private void bindRandomDribbleCourse() {
+        if (!isAdded() || dribbleCourseLinks.isEmpty()) {
+            return;
+        }
+        selectedDribbleCourse = dribbleCourseLinks.get(random.nextInt(dribbleCourseLinks.size()));
+        if (tvHomeCourseSite2 != null) {
+            tvHomeCourseSite2.setText(getString(selectedDribbleCourse.siteResId));
+        }
+    }
+
+    private String resolveSelectedDribbleCourseUrl() {
+        if (!isAdded()) {
+            return null;
+        }
+        if (selectedDribbleCourse == null) {
+            bindRandomDribbleCourse();
+        }
+        if (selectedDribbleCourse == null) {
+            return getString(R.string.home_course_url_2);
+        }
+        return getString(selectedDribbleCourse.urlResId);
+    }
+
+    private void bindRandomPassCourse() {
+        if (!isAdded() || passCourseUrlResIds.isEmpty()) {
+            return;
+        }
+        selectedPassCourseUrlResId = passCourseUrlResIds.get(random.nextInt(passCourseUrlResIds.size()));
+    }
+
+    private String resolveSelectedPassCourseUrl() {
+        if (!isAdded()) {
+            return null;
+        }
+        if (selectedPassCourseUrlResId == null) {
+            bindRandomPassCourse();
+        }
+        if (selectedPassCourseUrlResId == null) {
+            return getString(R.string.home_course_url_3);
+        }
+        return getString(selectedPassCourseUrlResId);
     }
 
     private void openExternalCourse(String url) {
