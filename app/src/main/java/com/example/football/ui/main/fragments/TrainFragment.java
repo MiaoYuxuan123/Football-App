@@ -125,7 +125,7 @@ public class TrainFragment extends Fragment {
 
     private static final String TAG = "TrainFragment";
     private static final long REP_INTERVAL_MS = 900L;
-    private static final String ANALYZE_SERVER_BASE = "http://115.120.248.168:8000";
+    private static final String ANALYZE_SERVER_BASE = "http://1.94.98.234:8000";
     private static final String ANALYZE_SHOOT_PATH = "/analyze_fast";
     private static final String ANALYZE_DRIBBLE_PATH = "/analyze_dribble_fast";
     private static final String ANALYZE_PASS_PATH = "/analyze_pass_fast";
