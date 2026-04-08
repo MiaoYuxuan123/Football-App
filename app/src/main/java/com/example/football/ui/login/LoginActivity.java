@@ -12,7 +12,6 @@ import com.example.football.data.AppRepository;
 import com.example.football.data.RepositoryProvider;
 import com.example.football.entity.user;
 import com.example.football.ui.main.MainActivity;
-import com.example.football.ui.login.RegisterActivity;
 import com.google.gson.Gson;
 
 import java.io.IOException;
@@ -25,8 +24,8 @@ public class LoginActivity extends AppCompatActivity {
     // 声明控件
     private EditText etAccount;   // 账号输入框
     private EditText etPassword;  // 密码输入框
-//    private static final String GET_USER_URL = "http://10.0.2.2:8088/findoneuser";
-    // 替换成你的真实公网 IP
+    // true: 走后端校验登录; false: 本地直登
+    private static final boolean USE_BACKEND_LOGIN = false;
     private static final String GET_USER_URL = "http://1.94.62.162:8088/findoneuser";
     private final OkHttpClient okHttpClient = new OkHttpClient();
     private AppRepository repository;
@@ -78,58 +77,69 @@ public class LoginActivity extends AppCompatActivity {
                     return;
                 }
 
-                // 3. 调用后端接口验证登录信息
-                String url = GET_USER_URL + "?name=" + account;
-                Request request = new Request.Builder()
-                        .url(url)
-                        .build();
+                // 3. 一键开关：按常量切换登录模式
+                if (USE_BACKEND_LOGIN) {
+                    loginWithBackend(account, password);
+                } else {
+                    loginDirect(account);
+                }
+            }
+        });
+    }
 
-                okHttpClient.newCall(request).enqueue(new okhttp3.Callback() {
+    private void loginDirect(String account) {
+        repository.setLoggedIn(true);
+        repository.setCurrentAccount(account);
+        navigateToMain();
+    }
+
+    private void loginWithBackend(String account, String password) {
+        String url = GET_USER_URL + "?name=" + account;
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+
+        okHttpClient.newCall(request).enqueue(new okhttp3.Callback() {
+            @Override
+            public void onFailure(okhttp3.Call call, IOException e) {
+                runOnUiThread(new Runnable() {
                     @Override
-                    public void onFailure(okhttp3.Call call, IOException e) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(LoginActivity.this, "网络请求失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            }
-                        });
+                    public void run() {
+                        Toast.makeText(LoginActivity.this, "网络请求失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
+                });
+            }
 
+            @Override
+            public void onResponse(okhttp3.Call call, Response response) throws IOException {
+                final String responseBody = response.body().string();
+                runOnUiThread(new Runnable() {
                     @Override
-                    public void onResponse(okhttp3.Call call, okhttp3.Response response) throws IOException {
-                        final String responseBody = response.body().string();
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (response.isSuccessful()) {
-                                    // 解析返回的用户信息
-                                    Gson gson = new Gson();
-                                    user user = gson.fromJson(responseBody, user.class);
-                                    
-                                    if (user != null && password.equals(user.getPassword())) {
-                                        // 密码正确，登录成功
-                                        repository.setLoggedIn(true);
-                                        repository.setCurrentAccount(account);
+                    public void run() {
+                        if (response.isSuccessful()) {
+                            Gson gson = new Gson();
+                            user user = gson.fromJson(responseBody, user.class);
 
-                                        // 跳转到主页面
-                                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                                        startActivity(intent);
-                                        // 关闭登录页，避免返回
-                                        finish();
-                                    } else {
-                                        // 密码错误或用户不存在
-                                        Toast.makeText(LoginActivity.this, "账号或密码错误", Toast.LENGTH_SHORT).show();
-                                    }
-                                } else {
-                                    // 网络请求成功但返回失败
-                                    Toast.makeText(LoginActivity.this, "登录失败：" + responseBody, Toast.LENGTH_SHORT).show();
-                                }
+                            if (user != null && password.equals(user.getPassword())) {
+                                repository.setLoggedIn(true);
+                                repository.setCurrentAccount(account);
+                                navigateToMain();
+                            } else {
+                                Toast.makeText(LoginActivity.this, "账号或密码错误", Toast.LENGTH_SHORT).show();
                             }
-                        });
+                        } else {
+                            Toast.makeText(LoginActivity.this, "登录失败：" + responseBody, Toast.LENGTH_SHORT).show();
+                        }
                     }
                 });
             }
         });
+    }
+
+    private void navigateToMain() {
+        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+        startActivity(intent);
+        finish();
     }
 
     /**
